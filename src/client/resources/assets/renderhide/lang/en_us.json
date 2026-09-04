@@ -1,0 +1,11 @@
+{
+  "key.category.renderhide.keys": "Render Hide",
+  "key.renderhide.toggle": "Toggle all hidden regions",
+  "key.renderhide.pos1": "Set position 1 from targeted block",
+  "key.renderhide.pos2": "Set position 2 from targeted block",
+  "key.renderhide.add": "Add selected hidden region",
+  "key.renderhide.saved_outlines": "Toggle saved region outlines",
+  "key.renderhide.virtual_light": "Toggle virtual light",
+  "key.renderhide.gui": "Open Render Hide menu"
+}
+

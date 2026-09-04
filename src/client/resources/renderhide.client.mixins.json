@@ -1,0 +1,24 @@
+{
+  "required": true,
+  "package": "com.ruok0214.renderhide.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "BlockModelRendererMixin",
+    "BlockRenderManagerMixin",
+    "ChunkRendererRegionMixin",
+    "EntityRenderManagerMixin",
+    "FallingBlockCommandRendererMixin",
+    "IndigoAoCalculatorMixin",
+    "IndigoTerrainLightMixin",
+    "MovingBlockRenderStateMixin",
+    "PistonBlockEntityRendererMixin",
+    "SectionBuilderMixin",
+    "SodiumLevelSliceMixin",
+    "SodiumGhostBlockMixin",
+    "SodiumBlockOcclusionMixin",
+    "SodiumVirtualLightMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
