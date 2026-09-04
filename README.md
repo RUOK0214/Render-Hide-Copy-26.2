@@ -1,4 +1,4 @@
-# Render Hide 2.5.0-alpha.6 — Minecraft 26.2 port
+# Render Hide 2.5.0-alpha.7 — Minecraft 26.2 port
 
 Port based on the supplied `render-hide-1.21.11-2.5.0-alpha.1.jar` and its
 matching source revision. This repository ports that exact behavior to
@@ -21,6 +21,11 @@ Alpha.6 enables the moving renderer's actual face-culling pass so adjacent
 piston-carried blocks do not darken at their shared face. It also preserves the
 item frame body's forward Z offset and applies alpha to its untinted block-model
 quads, keeping the frame and displayed item on the same opacity path.
+
+Alpha.7 supplies neighbouring moving states to the culling pass for both
+translucent and visible-filter blocks, stops exposing internal filter boundaries
+at partial opacity, and submits the item-frame body through the proven item-quad
+path while retaining its forward Z offset.
 
 ## Requirements
 

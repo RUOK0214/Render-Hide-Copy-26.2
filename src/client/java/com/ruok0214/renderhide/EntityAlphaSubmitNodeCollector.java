@@ -139,7 +139,16 @@ class EntityAlphaOrderedSubmitNodeCollector implements OrderedSubmitNodeCollecto
             }
             adjustedTints[alphaTintIndex] = this.alphaMultiplier;
 
-            this.delegate.submitBlockModel(poseStack, translucentEntityType(renderType),
+            RenderType translucentType = translucentEntityType(renderType);
+            if (usesForwardZOffset(renderType)) {
+                this.delegate.submitItem(poseStack, ItemDisplayContext.FIXED,
+                        light, overlay, outlineColor, adjustedTints,
+                        alphaItemQuads(parts, alphaTintIndex, translucentType),
+                        ItemStackRenderState.FoilType.NONE);
+                return;
+            }
+
+            this.delegate.submitBlockModel(poseStack, translucentType,
                     alphaBlockModelParts(parts, alphaTintIndex), adjustedTints,
                     light, overlay, outlineColor);
         }
@@ -233,6 +242,14 @@ class EntityAlphaOrderedSubmitNodeCollector implements OrderedSubmitNodeCollecto
             return RenderTypes.entityTranslucent(texture);
         }
 
+        private static boolean usesForwardZOffset(RenderType renderType) {
+            RenderSetup setup = ((RenderTypeAccessor) (Object) renderType)
+                    .renderhide$getState();
+            return ((RenderSetupAccessor) (Object) setup)
+                    .renderhide$getLayeringTransform()
+                    == LayeringTransform.VIEW_OFFSET_Z_LAYERING_FORWARD;
+        }
+
         private static RenderType translucentEntityZOffsetForward(Identifier texture) {
             return TRANSLUCENT_Z_OFFSET_FORWARD_TYPES.computeIfAbsent(texture, location -> {
                 RenderSetup setup = RenderSetup.builder(RenderPipelines.ENTITY_TRANSLUCENT)
@@ -256,6 +273,36 @@ class EntityAlphaOrderedSubmitNodeCollector implements OrderedSubmitNodeCollecto
                 adjusted.add(new AlphaBlockStateModelPart(part, alphaTintIndex));
             }
             return adjusted;
+        }
+
+        private static List<BakedQuad> alphaItemQuads(List<BlockStateModelPart> parts,
+                int alphaTintIndex, RenderType renderType) {
+            List<BakedQuad> adjusted = new ArrayList<>();
+            for (BlockStateModelPart part : parts) {
+                for (Direction direction : Direction.values()) {
+                    appendAlphaItemQuads(adjusted, part.getQuads(direction),
+                            alphaTintIndex, renderType);
+                }
+                appendAlphaItemQuads(adjusted, part.getQuads(null),
+                        alphaTintIndex, renderType);
+            }
+            return adjusted;
+        }
+
+        private static void appendAlphaItemQuads(List<BakedQuad> adjusted,
+                List<BakedQuad> quads, int alphaTintIndex, RenderType renderType) {
+            for (BakedQuad quad : quads) {
+                BakedQuad.MaterialInfo material = quad.materialInfo();
+                int tintIndex = material.isTinted()
+                        ? material.tintIndex() : alphaTintIndex;
+                BakedQuad.MaterialInfo adjustedMaterial = new BakedQuad.MaterialInfo(
+                        material.sprite(), ChunkSectionLayer.TRANSLUCENT,
+                        renderType, tintIndex, material.shade(), material.lightEmission());
+                adjusted.add(new BakedQuad(
+                        quad.position0(), quad.position1(), quad.position2(), quad.position3(),
+                        quad.packedUV0(), quad.packedUV1(), quad.packedUV2(), quad.packedUV3(),
+                        quad.direction(), adjustedMaterial));
+            }
         }
 
         private static BakedQuad withAlphaTint(BakedQuad quad, int alphaTintIndex) {

@@ -45,7 +45,7 @@ abstract class SodiumBlockOcclusionMixin {
         BlockPos class_23382 = this.pos.relative(class_23502);
         BlockState class_26802 = this.level.getBlockState(class_23382);
         if (!RegionManager.affectsOcclusion(this.pos, this.state)
-                && RegionManager.affectsOcclusion(class_23382, class_26802)) {
+                && RegionManager.isFullyHidden(class_23382, class_26802)) {
             callbackInfoReturnable.setReturnValue(true);
         }
     }

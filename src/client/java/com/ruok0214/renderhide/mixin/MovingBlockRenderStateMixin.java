@@ -43,8 +43,7 @@ abstract class MovingBlockRenderStateMixin implements MovingBlockOpacityAccess {
     @Inject(method = "getBlockState", at = @At("HEAD"), cancellable = true, remap = false)
     private void renderhide$includeAdjacentMovingBlock(BlockPos queryPos,
             CallbackInfoReturnable<BlockState> cir) {
-        if (!(renderhide$opacity > 0.0F && renderhide$opacity < 1.0F)
-                || renderhide$movementDirection == null) {
+        if (!(renderhide$opacity > 0.0F) || renderhide$movementDirection == null) {
             return;
         }
 

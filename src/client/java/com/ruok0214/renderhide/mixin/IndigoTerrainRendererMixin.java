@@ -63,7 +63,7 @@ abstract class IndigoTerrainRendererMixin {
         }
 
         BlockPos neighbourPos = this.pos.relative(direction);
-        if (RegionManager.affectsOcclusion(
+        if (RegionManager.isFullyHidden(
                 neighbourPos, this.level.getBlockState(neighbourPos))) {
             cir.setReturnValue(false);
         }

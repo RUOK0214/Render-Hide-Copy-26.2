@@ -44,14 +44,21 @@ The same decision is used everywhere:
   `EntityAlphaSubmitNodeCollector`
 
 Moving render states normally report AIR for every neighbouring position.
-Render Hide supplies the states of adjacent piston-moved blocks while they are
-translucent and enables the moving renderer's culling pass so the normal rules
-can remove shared internal faces.
+Render Hide supplies the states of adjacent piston-moved blocks for every
+visible opacity, including blocks kept opaque by a visible filter, and enables
+the moving renderer's culling pass so the normal rules can remove shared
+internal faces.
+
+At partial opacity, a normal/filter block keeps the same shared-face culling it
+had before Render Hide was enabled. Boundary faces are exposed only when the
+neighbour is fully skipped at 0%; exposing them beside a partially transparent
+neighbour creates the dark filter seam this design avoids.
 
 Entity renderers may submit block models as well as ordinary entity models.
-The item-frame body is one such block model: untinted quads receive a generated
-alpha tint, while its forward Z-offset is retained by a translucent equivalent
-render type. The displayed item continues through the item submission path.
+The item-frame body is one such block model: its quads are flattened into the
+same item feature path used by the displayed item, untinted quads receive a
+generated alpha tint, and a translucent forward-Z-offset render type keeps the
+frame above its supporting block.
 
 Changing vertex alpha without moving an opaque block to a translucent layer is
 not sufficient. Likewise, changing a layer after a face or model was removed is

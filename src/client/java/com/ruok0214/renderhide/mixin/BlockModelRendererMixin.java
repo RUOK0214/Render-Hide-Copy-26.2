@@ -49,7 +49,7 @@ abstract class BlockModelRendererMixin {
             }
         }
         if (!currentAffected
-                && RegionManager.affectsOcclusion(
+                && RegionManager.isFullyHidden(
                         neighborPos, world.getBlockState(neighborPos))) {
             cir.setReturnValue(true);
         }
