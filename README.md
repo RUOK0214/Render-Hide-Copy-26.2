@@ -1,4 +1,4 @@
-# Render Hide 2.5.0-alpha.1 — Minecraft 26.2 port
+# Render Hide 2.5.0-alpha.2 — Minecraft 26.2 port
 
 Port based on the supplied `render-hide-1.21.11-2.5.0-alpha.1.jar` and its
 matching source revision. This repository ports that exact behavior to
