@@ -1,72 +1,99 @@
 package com.ruok0214.renderhide.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.mojang.blaze3d.vertex.QuadInstance;
 import com.ruok0214.renderhide.MovingBlockOpacityAccess;
 import com.ruok0214.renderhide.RegionManager;
-import net.minecraft.client.renderer.SubmitNodeStorage;
+import net.minecraft.client.renderer.block.ModelBlockRenderer;
 import net.minecraft.client.renderer.block.MovingBlockRenderState;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
-import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
+import net.minecraft.client.renderer.feature.MovingBlockFeatureRenderer;
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.ARGB;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(targets = "net/minecraft/client/renderer/feature/BlockFeatureRenderer", remap = false)
+@Mixin(MovingBlockFeatureRenderer.class)
 abstract class FallingBlockCommandRendererMixin {
     @Unique
-    private static final ThreadLocal<MovingBlockRenderState> renderhide$currentMovingState = new ThreadLocal<>();
-    @Unique
-    private static final ThreadLocal<Float> renderhide$currentOpacity =
-            ThreadLocal.withInitial(() -> 1.0F);
+    private final ThreadLocal<MovingBlockRenderState> renderhide$currentMovingState = new ThreadLocal<>();
 
-    @Redirect(
-            method = "render(Lnet/minecraft/client/renderer/SubmitNodeCollection;Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;Lnet/minecraft/client/renderer/block/BlockRenderDispatcher;Lnet/minecraft/client/renderer/OutlineBufferSource;)V",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/SubmitNodeStorage$MovingBlockSubmit;movingBlockRenderState()Lnet/minecraft/client/renderer/block/MovingBlockRenderState;")
+    @WrapOperation(
+            method = "buildGroup",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/renderer/feature/MovingBlockFeatureRenderer$Submit;movingBlockRenderState()Lnet/minecraft/client/renderer/block/MovingBlockRenderState;"
+            )
     )
-    private MovingBlockRenderState renderhide$captureMovingState(SubmitNodeStorage.MovingBlockSubmit command) {
-        MovingBlockRenderState state = command.movingBlockRenderState();
-        renderhide$currentMovingState.set(state);
-        renderhide$currentOpacity.set(1.0F);
+    private MovingBlockRenderState renderhide$captureMovingState(
+            MovingBlockFeatureRenderer.Submit submit, Operation<MovingBlockRenderState> original) {
+        MovingBlockRenderState state = original.call(submit);
+        this.renderhide$currentMovingState.set(state);
         return state;
     }
 
-    @Redirect(
-            method = "render(Lnet/minecraft/client/renderer/SubmitNodeCollection;Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;Lnet/minecraft/client/renderer/block/BlockRenderDispatcher;Lnet/minecraft/client/renderer/OutlineBufferSource;)V",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/ItemBlockRenderTypes;getMovingBlockRenderType(Lnet/minecraft/world/level/block/state/BlockState;)Lnet/minecraft/client/renderer/rendertype/RenderType;")
+    @ModifyExpressionValue(
+            method = "buildGroup",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/renderer/block/ModelBlockRenderer;forceOpaque(ZLnet/minecraft/world/level/block/state/BlockState;)Z"
+            )
     )
-    private RenderType renderhide$chooseMovingLayer(BlockState state) {
-        MovingBlockRenderState moving = renderhide$currentMovingState.get();
-        float opacity = moving == null ? 1.0F : renderhide$opacity(moving, state);
-        renderhide$currentOpacity.set(opacity);
-        return opacity < 1.0F ? RenderTypes.translucentMovingBlock() : ItemBlockRenderTypes.getMovingBlockRenderType(state);
+    private boolean renderhide$ghostIsNotForcedOpaque(boolean original) {
+        return renderhide$currentOpacity() < 1.0F ? false : original;
     }
 
-    @Inject(
-            method = "render(Lnet/minecraft/client/renderer/SubmitNodeCollection;Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;Lnet/minecraft/client/renderer/block/BlockRenderDispatcher;Lnet/minecraft/client/renderer/OutlineBufferSource;)V",
-            at = @At("RETURN")
-    )
+    @ModifyVariable(method = "putBakedQuad", at = @At("HEAD"), argsOnly = true)
+    private ChunkSectionLayer renderhide$useTranslucentLayer(ChunkSectionLayer original) {
+        return renderhide$currentOpacity() < 1.0F ? ChunkSectionLayer.TRANSLUCENT : original;
+    }
+
+    @ModifyVariable(method = "putBakedQuad", at = @At("HEAD"), argsOnly = true)
+    private QuadInstance renderhide$applyMovingAlpha(QuadInstance instance) {
+        float opacity = renderhide$currentOpacity();
+        if (opacity < 1.0F) {
+            instance.multiplyColor(ARGB.white(opacity));
+        }
+        return instance;
+    }
+
+    @Inject(method = "buildGroup", at = @At("RETURN"))
     private void renderhide$clearMovingState(CallbackInfo ci) {
-        renderhide$currentMovingState.remove();
-        renderhide$currentOpacity.remove();
+        this.renderhide$currentMovingState.remove();
     }
 
     @Unique
-    private static float renderhide$opacity(MovingBlockRenderState moving, BlockState state) {
+    private float renderhide$currentOpacity() {
+        MovingBlockRenderState moving = this.renderhide$currentMovingState.get();
+        if (moving == null) {
+            return 1.0F;
+        }
         float stored = ((MovingBlockOpacityAccess) moving).renderhide$getOpacity();
-        if (!Float.isNaN(stored)) return stored;
-        if ((moving.randomSeedPos != null && RegionManager.isFullyHidden(moving.randomSeedPos, state))
-                || (moving.blockPos != null && RegionManager.isFullyHidden(moving.blockPos, state))) return 0.0F;
-        if ((moving.randomSeedPos != null && RegionManager.isGhostRendered(moving.randomSeedPos, state))
-                || (moving.blockPos != null && RegionManager.isGhostRendered(moving.blockPos, state))) {
+        if (!Float.isNaN(stored)) {
+            return stored;
+        }
+        return renderhide$opacityAt(moving, moving.blockState);
+    }
+
+    @Unique
+    private static float renderhide$opacityAt(MovingBlockRenderState moving, BlockState state) {
+        BlockPos seedPos = moving.randomSeedPos;
+        BlockPos blockPos = moving.blockPos;
+        if ((seedPos != null && RegionManager.isFullyHidden(seedPos, state))
+                || (blockPos != null && RegionManager.isFullyHidden(blockPos, state))) {
+            return 0.0F;
+        }
+        if ((seedPos != null && RegionManager.isGhostRendered(seedPos, state))
+                || (blockPos != null && RegionManager.isGhostRendered(blockPos, state))) {
             return RegionManager.hiddenBlockOpacity();
         }
         return 1.0F;
     }
 }
-

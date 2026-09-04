@@ -7,7 +7,7 @@
  *  net.minecraft.KeyEvent
  *  net.minecraft.BlockPos
  *  net.minecraft.Component
- *  net.minecraft.ResourceLocation
+ *  net.minecraft.Identifier
  *  net.minecraft.GuiGraphics
  *  net.minecraft.EditBox
  *  net.minecraft.AbstractSliderButton
@@ -32,8 +32,8 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.Identifier;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.events.GuiEventListener;
@@ -51,7 +51,7 @@ extends Screen {
     private EditBox filterId;
     private String rememberedRegionName = "region";
     private String rememberedFilterId = "";
-    private ResourceLocation filterSuggestion;
+    private Identifier filterSuggestion;
     private boolean editingSelection;
     private String editingRegion;
     private boolean editingRegionFilters;
@@ -161,8 +161,8 @@ extends Screen {
             return;
         }
         boolean qualified = query.indexOf(58) >= 0;
-        Set ids = this.editingEntityFilters ? BuiltInRegistries.ENTITY_TYPE.keySet() : BuiltInRegistries.BLOCK.keySet();
-        for (ResourceLocation id : ids.stream().sorted().toList()) {
+        Set<Identifier> ids = this.editingEntityFilters ? BuiltInRegistries.ENTITY_TYPE.keySet() : BuiltInRegistries.BLOCK.keySet();
+        for (Identifier id : ids.stream().sorted().toList()) {
             String candidate = qualified ? id.toString() : id.getPath();
             if (!candidate.startsWith(query) || candidate.equals(query)) continue;
             this.filterSuggestion = id;
@@ -213,7 +213,6 @@ extends Screen {
             this.coordinates[i] = new EditBox(this.font, x, y, 120, 20, (Component)Component.literal((String)labels[i]));
             this.coordinates[i].setMaxLength(12);
             this.coordinates[i].setValue(Integer.toString(values[i]));
-            this.coordinates[i].setFilter(value -> value.isEmpty() || value.equals("-") || value.matches("-?\\d+"));
             this.addRenderableWidget(this.coordinates[i]);
         }
         this.addRenderableWidget(Button.builder((Component)Component.literal((String)"Save coordinates"), b -> this.saveCoordinates()).bounds(left, 187, panelWidth, 20).build());
@@ -271,12 +270,12 @@ extends Screen {
         this.addRenderableWidget(this.filterId);
         this.updateFilterSuggestion(this.rememberedFilterId);
         this.addRenderableWidget(Button.builder((Component)Component.literal((String)"Add"), b -> this.addFilter()).bounds(left + panelWidth - 60, 68, 60, 20).build());
-        ArrayList<ResourceLocation> filters = new ArrayList<ResourceLocation>(this.entityFiltersForRegion ? RegionManager.regionEntityFilters(this.editingRegion) : RegionManager.visibleEntityFilters());
-        filters.sort(Comparator.comparing(ResourceLocation::toString));
+        ArrayList<Identifier> filters = new ArrayList<Identifier>(this.entityFiltersForRegion ? RegionManager.regionEntityFilters(this.editingRegion) : RegionManager.visibleEntityFilters());
+        filters.sort(Comparator.comparing(Identifier::toString));
         this.regionFilterPage = RenderHideScreen.clampPage(this.regionFilterPage, filters.size());
         int start = this.regionFilterPage * 6;
         for (int row = 0; row < 6 && start + row < filters.size(); ++row) {
-            ResourceLocation id = (ResourceLocation)filters.get(start + row);
+            Identifier id = (Identifier)filters.get(start + row);
             int y = 98 + row * 23;
             this.addRenderableWidget(Button.builder((Component)Component.literal((String)id.toString()), b -> {}).bounds(left, y, panelWidth - 27, 20).build());
             this.addRenderableWidget(Button.builder((Component)Component.literal((String)"\u00d7"), b -> {
@@ -339,12 +338,12 @@ extends Screen {
         this.addRenderableWidget(this.filterId);
         this.updateFilterSuggestion(this.rememberedFilterId);
         this.addRenderableWidget(Button.builder((Component)Component.literal((String)"Add"), b -> this.addFilter()).bounds(left + panelWidth - 60, 68, 60, 20).build());
-        ArrayList<ResourceLocation> filters = new ArrayList<ResourceLocation>(this.editingRegionFilters ? RegionManager.regionFilters(region.name()) : RegionManager.visibleBlockFilters());
-        filters.sort(Comparator.comparing(ResourceLocation::toString));
+        ArrayList<Identifier> filters = new ArrayList<Identifier>(this.editingRegionFilters ? RegionManager.regionFilters(region.name()) : RegionManager.visibleBlockFilters());
+        filters.sort(Comparator.comparing(Identifier::toString));
         this.regionFilterPage = RenderHideScreen.clampPage(this.regionFilterPage, filters.size());
         int start = this.regionFilterPage * 6;
         for (int row = 0; row < 6 && start + row < filters.size(); ++row) {
-            ResourceLocation id = (ResourceLocation)filters.get(start + row);
+            Identifier id = (Identifier)filters.get(start + row);
             int y = 98 + row * 23;
             this.addRenderableWidget(Button.builder((Component)Component.literal((String)id.toString()), b -> {}).bounds(left, y, panelWidth - 27, 20).build());
             this.addRenderableWidget(Button.builder((Component)Component.literal((String)"\u00d7"), b -> {
@@ -392,7 +391,7 @@ extends Screen {
         this.addRenderableWidget(Button.builder((Component)Component.literal((String)"Paste filters"), b -> this.pasteCurrentFilters()).bounds(left + buttonWidth + gap, y, buttonWidth, 20).build());
     }
 
-    private Set<ResourceLocation> currentFilters() {
+    private Set<Identifier> currentFilters() {
         if (this.editingEntityFilters) {
             return this.entityFiltersForRegion ? RegionManager.regionEntityFilters(this.editingRegion) : RegionManager.visibleEntityFilters();
         }
@@ -405,7 +404,7 @@ extends Screen {
     private void copyCurrentFilters() {
         boolean entities = this.editingEntityFilters;
         StringBuilder text = new StringBuilder("# Render Hide ").append(entities ? "entity" : "block").append(" filters\n");
-        this.currentFilters().stream().sorted(Comparator.comparing(ResourceLocation::toString)).forEach(id -> text.append(id).append('\n'));
+        this.currentFilters().stream().sorted(Comparator.comparing(Identifier::toString)).forEach(id -> text.append(id).append('\n'));
         this.minecraft.keyboardHandler.setClipboard(text.toString());
         RegionManager.message("Copied " + this.currentFilters().size() + " " + (entities ? "entity" : "block") + " filters.");
     }
@@ -422,15 +421,15 @@ extends Screen {
             RegionManager.message("Clipboard contains the wrong filter type.");
             return;
         }
-        Set<ResourceLocation> before = this.currentFilters();
-        ArrayList<ResourceLocation> valid = new ArrayList<ResourceLocation>();
+        Set<Identifier> before = this.currentFilters();
+        ArrayList<Identifier> valid = new ArrayList<Identifier>();
         int invalid = 0;
         int duplicates = 0;
-        LinkedHashSet<ResourceLocation> seen = new LinkedHashSet<ResourceLocation>();
+        LinkedHashSet<Identifier> seen = new LinkedHashSet<Identifier>();
         for (String token : clipboard.split("[\\s,;]+")) {
             String value = token.trim();
             if (value.isEmpty() || value.startsWith("#") || value.equalsIgnoreCase("Render") || value.equalsIgnoreCase("Hide") || value.equalsIgnoreCase("block") || value.equalsIgnoreCase("entity") || value.equalsIgnoreCase("filters")) continue;
-            ResourceLocation id = ResourceLocation.tryParse((String)value);
+            Identifier id = Identifier.tryParse((String)value);
             boolean exists = id != null && (entities ? BuiltInRegistries.ENTITY_TYPE.containsKey(id) : BuiltInRegistries.BLOCK.containsKey(id));
             if (!exists) {
                 ++invalid;
@@ -474,7 +473,7 @@ extends Screen {
     private void addFilter() {
         boolean added;
         String value = this.filterId.getValue().trim();
-        ResourceLocation id = ResourceLocation.tryParse((String)value);
+        Identifier id = Identifier.tryParse((String)value);
         boolean valid = id != null && (this.editingEntityFilters ? BuiltInRegistries.ENTITY_TYPE.containsKey(id) : BuiltInRegistries.BLOCK.containsKey(id));
         if (!valid) {
             RegionManager.message("Unknown " + (this.editingEntityFilters ? "entity" : "block") + ": " + value);
@@ -504,7 +503,7 @@ extends Screen {
         return Component.literal((String)(name + ": " + (enabled ? "ON" : "OFF")));
     }
 
-    public void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
         if (this.editingEntityFilters) {
             this.renderEntityFilterEditor(context, mouseX, mouseY, deltaTicks);
             return;
@@ -522,53 +521,53 @@ extends Screen {
         int gap = 8;
         int columnWidth = (panelWidth - gap) / 2;
         context.fill(left - 6, 8, left + panelWidth + 6, 367, -1341124592);
-        context.drawCenteredString(this.font, this.title, this.width / 2, 12, 0xFFFFFF);
-        context.drawString(this.font, RenderHideScreen.positionText("Position 1", RegionManager.getPos1()), left, 80, 0xD0D0D0);
-        context.drawString(this.font, RenderHideScreen.positionText("Position 2", RegionManager.getPos2()), left, 92, 0xD0D0D0);
-        context.drawString(this.font, "Saved regions", left, 132, 0xFFFFFF);
-        context.drawCenteredString(this.font, this.regionPage + 1 + "/" + Math.max(1, (RegionManager.regions().size() + 6 - 1) / 6), this.width / 2, 317, 0xA0A0A0);
-        super.render(context, mouseX, mouseY, deltaTicks);
+        context.centeredText(this.font, this.title, this.width / 2, 12, 0xFFFFFF);
+        context.text(this.font, RenderHideScreen.positionText("Position 1", RegionManager.getPos1()), left, 80, 0xD0D0D0);
+        context.text(this.font, RenderHideScreen.positionText("Position 2", RegionManager.getPos2()), left, 92, 0xD0D0D0);
+        context.text(this.font, "Saved regions", left, 132, 0xFFFFFF);
+        context.centeredText(this.font, this.regionPage + 1 + "/" + Math.max(1, (RegionManager.regions().size() + 6 - 1) / 6), this.width / 2, 317, 0xA0A0A0);
+        super.extractRenderState(context, mouseX, mouseY, deltaTicks);
     }
 
-    private void renderCoordinateEditor(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+    private void renderCoordinateEditor(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
         int panelWidth = Math.min(390, this.width - 20);
         int left = (this.width - panelWidth) / 2;
         context.fill(left - 8, 18, left + panelWidth + 8, this.editingRegion == null ? 282 : 327, -1341124592);
         String heading = this.editingSelection ? "Current selection" : "Region: " + this.editingRegion;
-        context.drawCenteredString(this.font, heading, this.width / 2, 29, 0xFFFFFF);
-        context.drawCenteredString(this.font, this.editingSelection ? "Edit both corners of the red selection" : "Edit the saved region bounds", this.width / 2, 47, 0xB0B0B0);
-        context.drawString(this.font, "Position 1", left, 67, 0xFFFFFF);
-        context.drawString(this.font, "Position 2", left, 115, 0xFFFFFF);
+        context.centeredText(this.font, heading, this.width / 2, 29, 0xFFFFFF);
+        context.centeredText(this.font, this.editingSelection ? "Edit both corners of the red selection" : "Edit the saved region bounds", this.width / 2, 47, 0xB0B0B0);
+        context.text(this.font, "Position 1", left, 67, 0xFFFFFF);
+        context.text(this.font, "Position 2", left, 115, 0xFFFFFF);
         String[] labels = new String[]{"X", "Y", "Z", "X", "Y", "Z"};
         for (int i = 0; i < 6; ++i) {
             int x = left + i % 3 * 130;
             int y = i < 3 ? 72 : 120;
-            context.drawString(this.font, labels[i], x + 2, y, 0xA0A0A0);
+            context.text(this.font, labels[i], x + 2, y, 0xA0A0A0);
         }
-        super.render(context, mouseX, mouseY, deltaTicks);
+        super.extractRenderState(context, mouseX, mouseY, deltaTicks);
     }
 
-    private void renderRegionFilterEditor(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+    private void renderRegionFilterEditor(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
         int panelWidth = Math.min(390, this.width - 20);
         int left = (this.width - panelWidth) / 2;
         int count = this.editingRegionFilters ? RegionManager.regionFilters(this.editingRegion).size() : RegionManager.visibleBlockFilters().size();
         context.fill(left - 8, 18, left + panelWidth + 8, 324, -1341124592);
-        context.drawCenteredString(this.font, (String)(this.editingRegionFilters ? "Region block filters: " + this.editingRegion : "Global block filters"), this.width / 2, 29, 0xFFFFFF);
-        context.drawCenteredString(this.font, this.editingRegionFilters ? "Added to global filters \u2022 Tab to complete" : "Visible exceptions \u2022 Tab to complete", this.width / 2, 47, 0xB0B0B0);
-        context.drawCenteredString(this.font, this.regionFilterPage + 1 + "/" + Math.max(1, (count + 6 - 1) / 6), this.width / 2, 245, 0xA0A0A0);
-        super.render(context, mouseX, mouseY, deltaTicks);
+        context.centeredText(this.font, this.editingRegionFilters ? "Region block filters: " + this.editingRegion : "Global block filters", this.width / 2, 29, 0xFFFFFF);
+        context.centeredText(this.font, this.editingRegionFilters ? "Added to global filters \u2022 Tab to complete" : "Visible exceptions \u2022 Tab to complete", this.width / 2, 47, 0xB0B0B0);
+        context.centeredText(this.font, this.regionFilterPage + 1 + "/" + Math.max(1, (count + 6 - 1) / 6), this.width / 2, 245, 0xA0A0A0);
+        super.extractRenderState(context, mouseX, mouseY, deltaTicks);
     }
 
-    private void renderEntityFilterEditor(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+    private void renderEntityFilterEditor(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
         int panelWidth = Math.min(390, this.width - 20);
         int left = (this.width - panelWidth) / 2;
         int count = this.entityFiltersForRegion ? RegionManager.regionEntityFilters(this.editingRegion).size() : RegionManager.visibleEntityFilters().size();
         context.fill(left - 8, 18, left + panelWidth + 8, 324, -1341124592);
         String heading = this.entityFiltersForRegion ? "Region entity filters: " + this.editingRegion : "Global entity filters";
-        context.drawCenteredString(this.font, heading, this.width / 2, 29, 0xFFFFFF);
-        context.drawCenteredString(this.font, "Visible exceptions \u2022 Tab to complete", this.width / 2, 47, 0xB0B0B0);
-        context.drawCenteredString(this.font, this.regionFilterPage + 1 + "/" + Math.max(1, (count + 6 - 1) / 6), this.width / 2, 245, 0xA0A0A0);
-        super.render(context, mouseX, mouseY, deltaTicks);
+        context.centeredText(this.font, heading, this.width / 2, 29, 0xFFFFFF);
+        context.centeredText(this.font, "Visible exceptions \u2022 Tab to complete", this.width / 2, 47, 0xB0B0B0);
+        context.centeredText(this.font, this.regionFilterPage + 1 + "/" + Math.max(1, (count + 6 - 1) / 6), this.width / 2, 245, 0xA0A0A0);
+        super.extractRenderState(context, mouseX, mouseY, deltaTicks);
     }
 
     private Component selectionText() {
@@ -602,4 +601,3 @@ extends Screen {
         }
     }
 }
-

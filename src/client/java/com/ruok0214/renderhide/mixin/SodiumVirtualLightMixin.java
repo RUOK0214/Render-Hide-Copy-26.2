@@ -34,8 +34,7 @@ abstract class SodiumVirtualLightMixin {
 
     @Inject(method={"getBrightness"}, at={@At(value="RETURN")}, cancellable=true, remap=false)
     private void renderhide$sampleVirtualLight(LightLayer type, BlockPos pos, CallbackInfoReturnable<Integer> cir) {
-        cir.setReturnValue((Object)RegionManager.virtualLightLevel(type, pos, cir.getReturnValueI()));
+        cir.setReturnValue(RegionManager.virtualLightLevel(type, pos, cir.getReturnValueI()));
     }
 }
-
 

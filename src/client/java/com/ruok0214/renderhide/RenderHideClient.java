@@ -53,7 +53,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import com.mojang.blaze3d.platform.InputConstants;
@@ -116,8 +116,8 @@ implements ClientModInitializer {
             RegionManager.toggleVirtualLight();
         }
         while (guiKey.consumeClick()) {
-            if (client.screen instanceof RenderHideScreen) {
-                client.setScreen(null);
+            if (client.gui.screen() instanceof RenderHideScreen) {
+                client.setScreenAndShow(null);
                 continue;
             }
             client.setScreenAndShow(new RenderHideScreen());
@@ -182,7 +182,7 @@ implements ClientModInitializer {
     }
 
     private static int addFilter(String value) {
-        ResourceLocation id = ResourceLocation.tryParse(value = value.trim());
+        Identifier id = Identifier.tryParse(value = value.trim());
         if (id == null || !BuiltInRegistries.BLOCK.containsKey(id)) {
             RegionManager.message("Unknown block: " + value);
             return 0;
@@ -191,7 +191,7 @@ implements ClientModInitializer {
     }
 
     private static int removeFilter(String value) {
-        ResourceLocation id = ResourceLocation.tryParse(value = value.trim());
+        Identifier id = Identifier.tryParse(value = value.trim());
         return RenderHideClient.result(id != null && RegionManager.removeVisibleBlockFilter(id), "Block is not in the visible filter.");
     }
 
@@ -232,4 +232,3 @@ implements ClientModInitializer {
         return 1;
     }
 }
-

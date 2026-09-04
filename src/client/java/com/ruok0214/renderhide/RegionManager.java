@@ -22,7 +22,7 @@
  *  net.minecraft.BlockState
  *  net.minecraft.PistonType
  *  net.minecraft.Property
- *  net.minecraft.ResourceLocation
+ *  net.minecraft.Identifier
  *  net.minecraft.Minecraft
  *  net.minecraft.SectionPos
  *  net.minecraft.BuiltInRegistries
@@ -44,7 +44,6 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileAttribute;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -59,15 +58,13 @@ import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.Position;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.piston.PistonMovingBlockEntity;
 import net.minecraft.world.level.block.piston.PistonHeadBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.PistonType;
-import net.minecraft.world.level.block.state.properties.Property;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.SectionPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -87,10 +84,10 @@ public final class RegionManager {
     private static volatile boolean globallyEnabled = true;
     private static volatile boolean virtualLightEnabled = true;
     private static volatile float hiddenBlockOpacity = 0.0f;
-    private static volatile Set<ResourceLocation> visibleBlockFilters = Set.of();
-    private static volatile Map<String, Set<ResourceLocation>> regionVisibleBlockFilters = Map.of();
-    private static volatile Set<ResourceLocation> visibleEntityFilters = Set.of();
-    private static volatile Map<String, Set<ResourceLocation>> regionVisibleEntityFilters = Map.of();
+    private static volatile Set<Identifier> visibleBlockFilters = Set.of();
+    private static volatile Map<String, Set<Identifier>> regionVisibleBlockFilters = Map.of();
+    private static volatile Set<Identifier> visibleEntityFilters = Set.of();
+    private static volatile Map<String, Set<Identifier>> regionVisibleEntityFilters = Map.of();
     private static BlockPos pos1;
     private static BlockPos pos2;
 
@@ -98,13 +95,12 @@ public final class RegionManager {
     }
 
     public static void load() {
-        Object loaded;
         BufferedReader reader;
         if (Files.exists(CONFIG, new LinkOption[0])) {
             try {
                 reader = Files.newBufferedReader(CONFIG);
                 try {
-                    loaded = (List)GSON.fromJson((Reader)reader, REGION_LIST);
+                    List<HiddenRegion> loaded = GSON.fromJson(reader, REGION_LIST);
                     snapshot = loaded == null ? List.of() : List.copyOf(loaded);
                 }
                 finally {
@@ -121,13 +117,11 @@ public final class RegionManager {
             try {
                 reader = Files.newBufferedReader(FILTER_CONFIG);
                 try {
-                    loaded = (List)GSON.fromJson((Reader)reader, new TypeToken<List<String>>(){}.getType());
-                    LinkedHashSet<ResourceLocation> filters = new LinkedHashSet<ResourceLocation>();
+                    List<String> loaded = GSON.fromJson(reader, new TypeToken<List<String>>(){}.getType());
+                    LinkedHashSet<Identifier> filters = new LinkedHashSet<>();
                     if (loaded != null) {
-                        Iterator iterator = loaded.iterator();
-                        while (iterator.hasNext()) {
-                            String value = (String)iterator.next();
-                            ResourceLocation id = ResourceLocation.tryParse((String)value);
+                        for (String value : loaded) {
+                            Identifier id = Identifier.tryParse(value);
                             if (id == null || !BuiltInRegistries.BLOCK.containsKey(id)) continue;
                             filters.add(id);
                         }
@@ -149,14 +143,14 @@ public final class RegionManager {
                 reader = Files.newBufferedReader(REGION_FILTER_CONFIG);
                 try {
                     Type type = new TypeToken<Map<String, List<String>>>(){}.getType();
-                    Map loaded2 = (Map)GSON.fromJson((Reader)reader, type);
-                    LinkedHashMap result = new LinkedHashMap();
+                    Map<String, List<String>> loaded2 = GSON.fromJson(reader, type);
+                    LinkedHashMap<String, Set<Identifier>> result = new LinkedHashMap<>();
                     if (loaded2 != null) {
                         loaded2.forEach((name, values) -> {
-                            LinkedHashSet<ResourceLocation> filters = new LinkedHashSet<ResourceLocation>();
+                            LinkedHashSet<Identifier> filters = new LinkedHashSet<Identifier>();
                             if (values != null) {
                                 for (String value : values) {
-                                    ResourceLocation id = ResourceLocation.tryParse((String)value);
+                                    Identifier id = Identifier.tryParse(value);
                                     if (id == null || !BuiltInRegistries.BLOCK.containsKey(id)) continue;
                                     filters.add(id);
                                 }
@@ -184,9 +178,9 @@ public final class RegionManager {
             try {
                 reader = Files.newBufferedReader(OPACITY_CONFIG);
                 try {
-                    loaded = (Float)GSON.fromJson((Reader)reader, Float.class);
+                    Float loaded = GSON.fromJson(reader, Float.class);
                     if (loaded != null) {
-                        hiddenBlockOpacity = Math.max(0.0f, Math.min(1.0f, ((Float)loaded).floatValue()));
+                        hiddenBlockOpacity = Math.max(0.0f, Math.min(1.0f, loaded));
                     }
                 }
                 finally {
@@ -314,7 +308,7 @@ public final class RegionManager {
             for (int distance = 0; distance <= 512; ++distance) {
                 BlockState state = client.level.getBlockState((BlockPos)skyCursor);
                 if (!RegionManager.isInsideActiveRegion((BlockPos)skyCursor)) {
-                    if (!state.isAir() && state.isSolidRender() && state.getLightBlock() > 0) break;
+                    if (!state.isAir() && state.isSolidRender() && state.getLightDampening() > 0) break;
                     int boundary = client.level.getBrightness(LightLayer.SKY, (BlockPos)skyCursor);
                     int turnDecay = face == Direction.UP ? 0 : 1;
                     best = Math.max(best, boundary - turnDecay);
@@ -379,19 +373,19 @@ public final class RegionManager {
         return hiddenBlockOpacity <= 0.0f && RegionManager.isHidden(pos, state);
     }
 
-    public static Set<ResourceLocation> visibleBlockFilters() {
+    public static Set<Identifier> visibleBlockFilters() {
         return visibleBlockFilters;
     }
 
-    public static Set<ResourceLocation> regionFilters(String regionName) {
+    public static Set<Identifier> regionFilters(String regionName) {
         return regionVisibleBlockFilters.getOrDefault(regionName.toLowerCase(Locale.ROOT), Set.of());
     }
 
-    public static Set<ResourceLocation> visibleEntityFilters() {
+    public static Set<Identifier> visibleEntityFilters() {
         return visibleEntityFilters;
     }
 
-    public static Set<ResourceLocation> regionEntityFilters(String regionName) {
+    public static Set<Identifier> regionEntityFilters(String regionName) {
         return regionVisibleEntityFilters.getOrDefault(regionName.toLowerCase(Locale.ROOT), Set.of());
     }
 
@@ -399,11 +393,11 @@ public final class RegionManager {
         if (!globallyEnabled) {
             return false;
         }
-        ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey((Object)entity.getType());
+        Identifier id = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
         if (visibleEntityFilters.contains(id)) {
             return false;
         }
-        BlockPos pos = BlockPos.containing((Position)entity.getBoundingBox().getCenter());
+        BlockPos pos = BlockPos.containing(entity.getBoundingBox().getCenter());
         boolean inside = false;
         for (HiddenRegion region : snapshot) {
             if (!region.contains(pos, activeDimension)) continue;
@@ -414,11 +408,11 @@ public final class RegionManager {
         return inside;
     }
 
-    public static boolean addVisibleEntityFilter(ResourceLocation id) {
+    public static boolean addVisibleEntityFilter(Identifier id) {
         if (!BuiltInRegistries.ENTITY_TYPE.containsKey(id)) {
             return false;
         }
-        LinkedHashSet<ResourceLocation> filters = new LinkedHashSet<ResourceLocation>(visibleEntityFilters);
+        LinkedHashSet<Identifier> filters = new LinkedHashSet<Identifier>(visibleEntityFilters);
         if (!filters.add(id)) {
             return false;
         }
@@ -428,8 +422,8 @@ public final class RegionManager {
         return true;
     }
 
-    public static boolean removeVisibleEntityFilter(ResourceLocation id) {
-        LinkedHashSet<ResourceLocation> filters = new LinkedHashSet<ResourceLocation>(visibleEntityFilters);
+    public static boolean removeVisibleEntityFilter(Identifier id) {
+        LinkedHashSet<Identifier> filters = new LinkedHashSet<Identifier>(visibleEntityFilters);
         if (!filters.remove(id)) {
             return false;
         }
@@ -446,15 +440,15 @@ public final class RegionManager {
         RegionManager.message("Visible entity filters cleared (" + count + ").");
     }
 
-    public static int addVisibleFiltersBatch(List<ResourceLocation> ids, boolean entities, String regionName) {
+    public static int addVisibleFiltersBatch(List<Identifier> ids, boolean entities, String regionName) {
         boolean regional;
         boolean bl = regional = regionName != null;
         if (regional && RegionManager.find(regionName) == null) {
             return 0;
         }
-        Set<ResourceLocation> current = entities ? (regional ? RegionManager.regionEntityFilters(regionName) : visibleEntityFilters) : (regional ? RegionManager.regionFilters(regionName) : visibleBlockFilters);
-        LinkedHashSet<ResourceLocation> merged = new LinkedHashSet<ResourceLocation>(current);
-        for (ResourceLocation id : ids) {
+        Set<Identifier> current = entities ? (regional ? RegionManager.regionEntityFilters(regionName) : visibleEntityFilters) : (regional ? RegionManager.regionFilters(regionName) : visibleBlockFilters);
+        LinkedHashSet<Identifier> merged = new LinkedHashSet<Identifier>(current);
+        for (Identifier id : ids) {
             boolean valid = entities ? BuiltInRegistries.ENTITY_TYPE.containsKey(id) : BuiltInRegistries.BLOCK.containsKey(id);
             if (!valid) continue;
             merged.add(id);
@@ -463,9 +457,9 @@ public final class RegionManager {
         if (added == 0) {
             return 0;
         }
-        Set<ResourceLocation> result = Set.copyOf(merged);
+        Set<Identifier> result = Set.copyOf(merged);
         if (entities && regional) {
-            LinkedHashMap<String, Set<ResourceLocation>> all = new LinkedHashMap<String, Set<ResourceLocation>>(regionVisibleEntityFilters);
+            LinkedHashMap<String, Set<Identifier>> all = new LinkedHashMap<String, Set<Identifier>>(regionVisibleEntityFilters);
             all.put(regionName.toLowerCase(Locale.ROOT), result);
             regionVisibleEntityFilters = Map.copyOf(all);
             RegionManager.saveRegionIdMap(REGION_ENTITY_FILTER_CONFIG, regionVisibleEntityFilters, "region entity filters");
@@ -473,7 +467,7 @@ public final class RegionManager {
             visibleEntityFilters = result;
             RegionManager.saveIdList(ENTITY_FILTER_CONFIG, visibleEntityFilters, "entity filters");
         } else if (regional) {
-            LinkedHashMap<String, Set<ResourceLocation>> all = new LinkedHashMap<String, Set<ResourceLocation>>(regionVisibleBlockFilters);
+            LinkedHashMap<String, Set<Identifier>> all = new LinkedHashMap<String, Set<Identifier>>(regionVisibleBlockFilters);
             all.put(regionName.toLowerCase(Locale.ROOT), result);
             regionVisibleBlockFilters = Map.copyOf(all);
             RegionManager.saveRegionFilters();
@@ -486,16 +480,16 @@ public final class RegionManager {
         return added;
     }
 
-    public static boolean addRegionVisibleEntityFilter(String regionName, ResourceLocation id) {
+    public static boolean addRegionVisibleEntityFilter(String regionName, Identifier id) {
         if (RegionManager.find(regionName) == null || !BuiltInRegistries.ENTITY_TYPE.containsKey(id)) {
             return false;
         }
         String key = regionName.toLowerCase(Locale.ROOT);
-        LinkedHashSet<ResourceLocation> filters = new LinkedHashSet<ResourceLocation>(RegionManager.regionEntityFilters(key));
+        LinkedHashSet<Identifier> filters = new LinkedHashSet<Identifier>(RegionManager.regionEntityFilters(key));
         if (!filters.add(id)) {
             return false;
         }
-        LinkedHashMap<String, Set<ResourceLocation>> all = new LinkedHashMap<String, Set<ResourceLocation>>(regionVisibleEntityFilters);
+        LinkedHashMap<String, Set<Identifier>> all = new LinkedHashMap<String, Set<Identifier>>(regionVisibleEntityFilters);
         all.put(key, Set.copyOf(filters));
         regionVisibleEntityFilters = Map.copyOf(all);
         RegionManager.saveRegionIdMap(REGION_ENTITY_FILTER_CONFIG, regionVisibleEntityFilters, "region entity filters");
@@ -503,13 +497,13 @@ public final class RegionManager {
         return true;
     }
 
-    public static boolean removeRegionVisibleEntityFilter(String regionName, ResourceLocation id) {
+    public static boolean removeRegionVisibleEntityFilter(String regionName, Identifier id) {
         String key = regionName.toLowerCase(Locale.ROOT);
-        LinkedHashSet<ResourceLocation> filters = new LinkedHashSet<ResourceLocation>(RegionManager.regionEntityFilters(key));
+        LinkedHashSet<Identifier> filters = new LinkedHashSet<Identifier>(RegionManager.regionEntityFilters(key));
         if (!filters.remove(id)) {
             return false;
         }
-        LinkedHashMap<String, Set<ResourceLocation>> all = new LinkedHashMap<String, Set<ResourceLocation>>(regionVisibleEntityFilters);
+        LinkedHashMap<String, Set<Identifier>> all = new LinkedHashMap<String, Set<Identifier>>(regionVisibleEntityFilters);
         if (filters.isEmpty()) {
             all.remove(key);
         } else {
@@ -524,7 +518,7 @@ public final class RegionManager {
     public static void clearRegionVisibleEntityFilters(String regionName) {
         String key = regionName.toLowerCase(Locale.ROOT);
         int count = RegionManager.regionEntityFilters(key).size();
-        LinkedHashMap<String, Set<ResourceLocation>> all = new LinkedHashMap<String, Set<ResourceLocation>>(regionVisibleEntityFilters);
+        LinkedHashMap<String, Set<Identifier>> all = new LinkedHashMap<String, Set<Identifier>>(regionVisibleEntityFilters);
         all.remove(key);
         regionVisibleEntityFilters = Map.copyOf(all);
         RegionManager.saveRegionIdMap(REGION_ENTITY_FILTER_CONFIG, regionVisibleEntityFilters, "region entity filters");
@@ -572,17 +566,17 @@ public final class RegionManager {
         return false;
     }
 
-    private static boolean isVisibleFilterState(BlockState state, Set<ResourceLocation> filters) {
-        ResourceLocation stateId = BuiltInRegistries.BLOCK.getKey((Object)state.getBlock());
+    private static boolean isVisibleFilterState(BlockState state, Set<Identifier> filters) {
+        Identifier stateId = BuiltInRegistries.BLOCK.getKey(state.getBlock());
         if (filters.contains(stateId)) {
             return true;
         }
         if (state.is(Blocks.PISTON_HEAD)) {
-            PistonType type = (PistonType)state.getValue((Property)PistonHeadBlock.TYPE);
-            return type == PistonType.STICKY ? filters.contains(BuiltInRegistries.BLOCK.getKey((Object)Blocks.STICKY_PISTON)) : filters.contains(BuiltInRegistries.BLOCK.getKey((Object)Blocks.PISTON));
+            PistonType type = state.getValue(PistonHeadBlock.TYPE);
+            return type == PistonType.STICKY ? filters.contains(BuiltInRegistries.BLOCK.getKey(Blocks.STICKY_PISTON)) : filters.contains(BuiltInRegistries.BLOCK.getKey(Blocks.PISTON));
         }
         if (state.is(Blocks.MOVING_PISTON)) {
-            return filters.contains(BuiltInRegistries.BLOCK.getKey((Object)Blocks.PISTON)) || filters.contains(BuiltInRegistries.BLOCK.getKey((Object)Blocks.STICKY_PISTON));
+            return filters.contains(BuiltInRegistries.BLOCK.getKey(Blocks.PISTON)) || filters.contains(BuiltInRegistries.BLOCK.getKey(Blocks.STICKY_PISTON));
         }
         if (!stateId.getNamespace().equals("minecraft")) {
             return false;
@@ -591,7 +585,7 @@ public final class RegionManager {
         if (family == null) {
             return false;
         }
-        for (ResourceLocation filter : filters) {
+        for (Identifier filter : filters) {
             if (!filter.getNamespace().equals("minecraft") || !family.equals(RegionManager.linkedFilterFamily(filter.getPath()))) continue;
             return true;
         }
@@ -662,11 +656,11 @@ public final class RegionManager {
         return null;
     }
 
-    public static boolean addVisibleBlockFilter(ResourceLocation id) {
+    public static boolean addVisibleBlockFilter(Identifier id) {
         if (!BuiltInRegistries.BLOCK.containsKey(id)) {
             return false;
         }
-        LinkedHashSet<ResourceLocation> filters = new LinkedHashSet<ResourceLocation>(visibleBlockFilters);
+        LinkedHashSet<Identifier> filters = new LinkedHashSet<Identifier>(visibleBlockFilters);
         if (!filters.add(id)) {
             return false;
         }
@@ -677,16 +671,16 @@ public final class RegionManager {
         return true;
     }
 
-    public static boolean addRegionVisibleBlockFilter(String regionName, ResourceLocation id) {
+    public static boolean addRegionVisibleBlockFilter(String regionName, Identifier id) {
         if (RegionManager.find(regionName) == null || !BuiltInRegistries.BLOCK.containsKey(id)) {
             return false;
         }
         String key = regionName.toLowerCase(Locale.ROOT);
-        LinkedHashSet<ResourceLocation> filters = new LinkedHashSet<ResourceLocation>(RegionManager.regionFilters(key));
+        LinkedHashSet<Identifier> filters = new LinkedHashSet<Identifier>(RegionManager.regionFilters(key));
         if (!filters.add(id)) {
             return false;
         }
-        LinkedHashMap<String, Set<ResourceLocation>> all = new LinkedHashMap<String, Set<ResourceLocation>>(regionVisibleBlockFilters);
+        LinkedHashMap<String, Set<Identifier>> all = new LinkedHashMap<String, Set<Identifier>>(regionVisibleBlockFilters);
         all.put(key, Set.copyOf(filters));
         regionVisibleBlockFilters = Map.copyOf(all);
         RegionManager.saveRegionFilters();
@@ -695,13 +689,13 @@ public final class RegionManager {
         return true;
     }
 
-    public static boolean removeRegionVisibleBlockFilter(String regionName, ResourceLocation id) {
+    public static boolean removeRegionVisibleBlockFilter(String regionName, Identifier id) {
         String key = regionName.toLowerCase(Locale.ROOT);
-        LinkedHashSet<ResourceLocation> filters = new LinkedHashSet<ResourceLocation>(RegionManager.regionFilters(key));
+        LinkedHashSet<Identifier> filters = new LinkedHashSet<Identifier>(RegionManager.regionFilters(key));
         if (!filters.remove(id)) {
             return false;
         }
-        LinkedHashMap<String, Set<ResourceLocation>> all = new LinkedHashMap<String, Set<ResourceLocation>>(regionVisibleBlockFilters);
+        LinkedHashMap<String, Set<Identifier>> all = new LinkedHashMap<String, Set<Identifier>>(regionVisibleBlockFilters);
         if (filters.isEmpty()) {
             all.remove(key);
         } else {
@@ -716,7 +710,7 @@ public final class RegionManager {
 
     public static void clearRegionVisibleBlockFilters(String regionName) {
         String key = regionName.toLowerCase(Locale.ROOT);
-        LinkedHashMap<String, Set<ResourceLocation>> all = new LinkedHashMap<String, Set<ResourceLocation>>(regionVisibleBlockFilters);
+        LinkedHashMap<String, Set<Identifier>> all = new LinkedHashMap<String, Set<Identifier>>(regionVisibleBlockFilters);
         int count = RegionManager.regionFilters(key).size();
         all.remove(key);
         regionVisibleBlockFilters = Map.copyOf(all);
@@ -725,8 +719,8 @@ public final class RegionManager {
         RegionManager.message("Region filters cleared for " + regionName + " (" + count + ").");
     }
 
-    public static boolean removeVisibleBlockFilter(ResourceLocation id) {
-        LinkedHashSet<ResourceLocation> filters = new LinkedHashSet<ResourceLocation>(visibleBlockFilters);
+    public static boolean removeVisibleBlockFilter(Identifier id) {
+        LinkedHashSet<Identifier> filters = new LinkedHashSet<Identifier>(visibleBlockFilters);
         if (!filters.remove(id)) {
             return false;
         }
@@ -779,11 +773,11 @@ public final class RegionManager {
             return false;
         }
         regions.remove(found);
-        LinkedHashMap<String, Set<ResourceLocation>> filters = new LinkedHashMap<String, Set<ResourceLocation>>(regionVisibleBlockFilters);
+        LinkedHashMap<String, Set<Identifier>> filters = new LinkedHashMap<String, Set<Identifier>>(regionVisibleBlockFilters);
         filters.remove(found.name().toLowerCase(Locale.ROOT));
         regionVisibleBlockFilters = Map.copyOf(filters);
         RegionManager.saveRegionFilters();
-        LinkedHashMap<String, Set<ResourceLocation>> entityFilters = new LinkedHashMap<String, Set<ResourceLocation>>(regionVisibleEntityFilters);
+        LinkedHashMap<String, Set<Identifier>> entityFilters = new LinkedHashMap<String, Set<Identifier>>(regionVisibleEntityFilters);
         entityFilters.remove(found.name().toLowerCase(Locale.ROOT));
         regionVisibleEntityFilters = Map.copyOf(entityFilters);
         RegionManager.saveRegionIdMap(REGION_ENTITY_FILTER_CONFIG, regionVisibleEntityFilters, "region entity filters");
@@ -915,7 +909,7 @@ public final class RegionManager {
         try {
             Files.createDirectories(FILTER_CONFIG.getParent(), new FileAttribute[0]);
             try (BufferedWriter writer = Files.newBufferedWriter(FILTER_CONFIG, new OpenOption[0]);){
-                GSON.toJson(visibleBlockFilters.stream().map(ResourceLocation::toString).sorted().toList(), (Appendable)writer);
+                GSON.toJson(visibleBlockFilters.stream().map(Identifier::toString).sorted().toList(), (Appendable)writer);
             }
         }
         catch (Exception e) {
@@ -926,8 +920,8 @@ public final class RegionManager {
     private static void saveRegionFilters() {
         try {
             Files.createDirectories(REGION_FILTER_CONFIG.getParent(), new FileAttribute[0]);
-            LinkedHashMap serialized = new LinkedHashMap();
-            regionVisibleBlockFilters.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> serialized.put((String)entry.getKey(), ((Set)entry.getValue()).stream().map(ResourceLocation::toString).sorted().toList()));
+            LinkedHashMap<String, List<String>> serialized = new LinkedHashMap<>();
+            regionVisibleBlockFilters.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> serialized.put(entry.getKey(), entry.getValue().stream().map(Identifier::toString).sorted().toList()));
             try (BufferedWriter writer = Files.newBufferedWriter(REGION_FILTER_CONFIG, new OpenOption[0]);){
                 GSON.toJson(serialized, (Appendable)writer);
             }
@@ -937,65 +931,41 @@ public final class RegionManager {
         }
     }
 
-    private static Set<ResourceLocation> loadIdList(Path path, boolean entityIds) {
-        Set set;
-        block11: {
-            if (!Files.exists(path, new LinkOption[0])) {
-                return Set.of();
-            }
-            BufferedReader reader = Files.newBufferedReader(path);
-            try {
-                List loaded = (List)GSON.fromJson((Reader)reader, new TypeToken<List<String>>(){}.getType());
-                LinkedHashSet<ResourceLocation> result = new LinkedHashSet<ResourceLocation>();
+    private static Set<Identifier> loadIdList(Path path, boolean entityIds) {
+        if (!Files.exists(path)) {
+            return Set.of();
+        }
+        try (BufferedReader reader = Files.newBufferedReader(path)) {
+                List<String> loaded = GSON.fromJson(reader, new TypeToken<List<String>>(){}.getType());
+                LinkedHashSet<Identifier> result = new LinkedHashSet<>();
                 if (loaded != null) {
                     for (String value : loaded) {
-                        ResourceLocation id = ResourceLocation.tryParse((String)value);
+                        Identifier id = Identifier.tryParse(value);
                         if (id == null || !(entityIds ? BuiltInRegistries.ENTITY_TYPE.containsKey(id) : BuiltInRegistries.BLOCK.containsKey(id))) continue;
                         result.add(id);
                     }
                 }
-                set = Set.copyOf(result);
-                if (reader == null) break block11;
-            }
-            catch (Throwable throwable) {
-                try {
-                    if (reader != null) {
-                        try {
-                            ((Reader)reader).close();
-                        }
-                        catch (Throwable throwable2) {
-                            throwable.addSuppressed(throwable2);
-                        }
-                    }
-                    throw throwable;
-                }
-                catch (Exception e) {
-                    RenderHideClient.LOGGER.error("Could not load filters from " + String.valueOf(path), (Throwable)e);
-                    return Set.of();
-                }
-            }
-            ((Reader)reader).close();
+                return Set.copyOf(result);
+        } catch (Exception e) {
+            RenderHideClient.LOGGER.error("Could not load filters from " + path, e);
+            return Set.of();
         }
-        return set;
     }
 
-    private static Map<String, Set<ResourceLocation>> loadRegionIdMap(Path path, boolean entityIds) {
-        Map<String, Set<ResourceLocation>> map;
-        block10: {
-            if (!Files.exists(path, new LinkOption[0])) {
-                return Map.of();
-            }
-            BufferedReader reader = Files.newBufferedReader(path);
-            try {
+    private static Map<String, Set<Identifier>> loadRegionIdMap(Path path, boolean entityIds) {
+        if (!Files.exists(path)) {
+            return Map.of();
+        }
+        try (BufferedReader reader = Files.newBufferedReader(path)) {
                 Type type = new TypeToken<Map<String, List<String>>>(){}.getType();
-                Map loaded = (Map)GSON.fromJson((Reader)reader, type);
-                LinkedHashMap result = new LinkedHashMap();
+                Map<String, List<String>> loaded = GSON.fromJson(reader, type);
+                LinkedHashMap<String, Set<Identifier>> result = new LinkedHashMap<>();
                 if (loaded != null) {
                     loaded.forEach((name, values) -> {
-                        LinkedHashSet<ResourceLocation> ids = new LinkedHashSet<ResourceLocation>();
+                        LinkedHashSet<Identifier> ids = new LinkedHashSet<Identifier>();
                         if (values != null) {
                             for (String value : values) {
-                                ResourceLocation id = ResourceLocation.tryParse((String)value);
+                                Identifier id = Identifier.tryParse(value);
                                 if (id == null || !(entityIds ? BuiltInRegistries.ENTITY_TYPE.containsKey(id) : BuiltInRegistries.BLOCK.containsKey(id))) continue;
                                 ids.add(id);
                             }
@@ -1005,36 +975,18 @@ public final class RegionManager {
                         }
                     });
                 }
-                map = Map.copyOf(result);
-                if (reader == null) break block10;
-            }
-            catch (Throwable throwable) {
-                try {
-                    if (reader != null) {
-                        try {
-                            ((Reader)reader).close();
-                        }
-                        catch (Throwable throwable2) {
-                            throwable.addSuppressed(throwable2);
-                        }
-                    }
-                    throw throwable;
-                }
-                catch (Exception e) {
-                    RenderHideClient.LOGGER.error("Could not load region filters from " + String.valueOf(path), (Throwable)e);
-                    return Map.of();
-                }
-            }
-            ((Reader)reader).close();
+                return Map.copyOf(result);
+        } catch (Exception e) {
+            RenderHideClient.LOGGER.error("Could not load region filters from " + path, e);
+            return Map.of();
         }
-        return map;
     }
 
-    private static void saveIdList(Path path, Set<ResourceLocation> ids, String description) {
+    private static void saveIdList(Path path, Set<Identifier> ids, String description) {
         try {
             Files.createDirectories(path.getParent(), new FileAttribute[0]);
             try (BufferedWriter writer = Files.newBufferedWriter(path, new OpenOption[0]);){
-                GSON.toJson(ids.stream().map(ResourceLocation::toString).sorted().toList(), (Appendable)writer);
+                GSON.toJson(ids.stream().map(Identifier::toString).sorted().toList(), (Appendable)writer);
             }
         }
         catch (Exception e) {
@@ -1042,11 +994,11 @@ public final class RegionManager {
         }
     }
 
-    private static void saveRegionIdMap(Path path, Map<String, Set<ResourceLocation>> values, String description) {
+    private static void saveRegionIdMap(Path path, Map<String, Set<Identifier>> values, String description) {
         try {
             Files.createDirectories(path.getParent(), new FileAttribute[0]);
-            LinkedHashMap serialized = new LinkedHashMap();
-            values.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> serialized.put((String)entry.getKey(), ((Set)entry.getValue()).stream().map(ResourceLocation::toString).sorted().toList()));
+            LinkedHashMap<String, List<String>> serialized = new LinkedHashMap<>();
+            values.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> serialized.put(entry.getKey(), entry.getValue().stream().map(Identifier::toString).sorted().toList()));
             try (BufferedWriter writer = Files.newBufferedWriter(path, new OpenOption[0]);){
                 GSON.toJson(serialized, (Appendable)writer);
             }
@@ -1064,13 +1016,15 @@ public final class RegionManager {
         if (!region.dimension().equals(client.level.dimension().identifier().toString())) {
             return;
         }
-        client.levelRenderer.setSectionRangeDirty(SectionPos.blockToSectionCoord((int)(region.minX() - 1)), SectionPos.blockToSectionCoord((int)(region.minY() - 1)), SectionPos.blockToSectionCoord((int)(region.minZ() - 1)), SectionPos.blockToSectionCoord((int)(region.maxX() + 1)), SectionPos.blockToSectionCoord((int)(region.maxY() + 1)), SectionPos.blockToSectionCoord((int)(region.maxZ() + 1)));
+        client.levelExtractor.setBlocksDirty(region.minX() - 1, region.minY() - 1, region.minZ() - 1,
+                region.maxX() + 1, region.maxY() + 1, region.maxZ() + 1);
     }
 
     public static void refreshAll() {
         Minecraft client = Minecraft.getInstance();
-        if (client.levelRenderer != null) {
-            client.levelRenderer.allChanged();
+        if (client.level != null && client.levelRenderer != null) {
+            client.levelRenderer.invalidateCompiledGeometry(client.level, client.options,
+                    client.gameRenderer.mainCamera(), client.getBlockColors());
         }
     }
 
@@ -1081,8 +1035,7 @@ public final class RegionManager {
     public static void message(String value) {
         Minecraft client = Minecraft.getInstance();
         if (client.player != null) {
-            client.player.displayClientMessage((Component)Component.literal((String)("[Render Hide] " + value)), false);
+            client.player.sendSystemMessage(Component.literal("[Render Hide] " + value));
         }
     }
 }
-

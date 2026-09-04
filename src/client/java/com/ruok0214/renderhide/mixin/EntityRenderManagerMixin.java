@@ -31,9 +31,8 @@ public abstract class EntityRenderManagerMixin {
     @Inject(method={"shouldRender"}, at={@At(value="HEAD")}, cancellable=true)
     private <E extends Entity> void renderhide$hideEntity(E entity, Frustum frustum, double x, double y, double z, CallbackInfoReturnable<Boolean> cir) {
         if (RegionManager.isEntityHidden(entity)) {
-            cir.setReturnValue((Object)false);
+            cir.setReturnValue(false);
         }
     }
 }
-
 

@@ -35,9 +35,8 @@ abstract class ChunkRendererRegionMixin {
 
     @Inject(method={"getBlockState"}, at={@At(value="RETURN")}, cancellable=true)
     private void renderhide$treatHiddenBlocksAsAir(BlockPos pos, CallbackInfoReturnable<BlockState> cir) {
-        if (RegionManager.isFullyHidden(pos, (BlockState)cir.getReturnValue())) {
-            cir.setReturnValue((Object)Blocks.AIR.defaultBlockState());
+        if (RegionManager.isFullyHidden(pos, cir.getReturnValue())) {
+            cir.setReturnValue(Blocks.AIR.defaultBlockState());
         }
     }
 }
-

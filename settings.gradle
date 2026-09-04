@@ -5,5 +5,4 @@ pluginManagement {
     }
 }
 
-rootProject.name = 'render-hide-1.21.11'
-
+rootProject.name = 'render-hide-26.2'

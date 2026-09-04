@@ -43,12 +43,11 @@ abstract class SodiumLevelSliceMixin {
     @Inject(target={@Desc(ret=BlockState.class, args={int.class, int.class, int.class}, value="getBlockState")}, at={@At(value="RETURN")}, cancellable=true, remap=false)
     private void renderhide$treatHiddenBlocksAsAir(int x, int y, int z, CallbackInfoReturnable<BlockState> cir) {
         BlockPos pos = new BlockPos(x, y, z);
-        if (RegionManager.isFullyHidden(pos, (BlockState)cir.getReturnValue())) {
+        if (RegionManager.isFullyHidden(pos, cir.getReturnValue())) {
             if (RENDERHIDE$LOGGED.compareAndSet(false, true)) {
                 RenderHideClient.LOGGER.info("Sodium mesh filter active at {}, {}, {}", new Object[]{x, y, z});
             }
-            cir.setReturnValue((Object)Blocks.AIR.defaultBlockState());
+            cir.setReturnValue(Blocks.AIR.defaultBlockState());
         }
     }
 }
-

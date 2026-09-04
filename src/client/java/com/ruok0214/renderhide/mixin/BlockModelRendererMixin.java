@@ -19,7 +19,7 @@ package com.ruok0214.renderhide.mixin;
 import com.ruok0214.renderhide.RegionManager;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.world.level.BlockAndTintGetter;
+import net.minecraft.client.renderer.block.BlockAndTintGetter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.state.BlockState;
@@ -36,11 +36,11 @@ abstract class BlockModelRendererMixin {
     }
 
     @Inject(method={"shouldRenderFace"}, at={@At(value="HEAD")}, cancellable=true)
-    private static void renderhide$exposeBoundary(BlockAndTintGetter world, BlockState state, boolean cull, Direction direction, BlockPos neighborPos, CallbackInfoReturnable<Boolean> cir) {
+    private void renderhide$exposeBoundary(BlockAndTintGetter world, BlockState state,
+            Direction direction, BlockPos neighborPos, CallbackInfoReturnable<Boolean> cir) {
         if (RegionManager.isHidden(neighborPos, world.getBlockState(neighborPos))) {
-            cir.setReturnValue((Object)true);
+            cir.setReturnValue(true);
         }
     }
 }
-
 

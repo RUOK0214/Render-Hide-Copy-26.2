@@ -8,15 +8,15 @@
     "ChunkRendererRegionMixin",
     "EntityRenderManagerMixin",
     "FallingBlockCommandRendererMixin",
-    "IndigoAoCalculatorMixin",
-    "IndigoTerrainLightMixin",
     "MovingBlockRenderStateMixin",
+    "MovingBlockSubmissionMixin",
     "PistonBlockEntityRendererMixin",
     "SectionBuilderMixin",
     "SodiumLevelSliceMixin",
     "SodiumGhostBlockMixin",
     "SodiumBlockOcclusionMixin",
-    "SodiumVirtualLightMixin"
+    "SodiumVirtualLightMixin",
+    "SodiumLightPipelineMixin"
   ],
   "injectors": {
     "defaultRequire": 1

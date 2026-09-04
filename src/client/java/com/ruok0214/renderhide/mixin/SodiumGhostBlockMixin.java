@@ -20,13 +20,14 @@ package com.ruok0214.renderhide.mixin;
 
 import com.ruok0214.renderhide.RegionManager;
 import net.caffeinemc.mods.sodium.client.render.model.MutableQuadViewImpl;
-import net.minecraft.client.renderer.block.model.BlockStateModel;
+import net.minecraft.client.renderer.block.dispatch.BlockStateModel;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -40,6 +41,8 @@ abstract class SodiumGhostBlockMixin {
     private BlockState renderhide$currentState;
     @Unique
     private BlockPos renderhide$currentPos;
+    @Shadow
+    protected boolean forceOpaque;
 
     SodiumGhostBlockMixin() {
     }
@@ -51,6 +54,22 @@ abstract class SodiumGhostBlockMixin {
     }
 
     @Inject(method={"processQuad"}, at={@At(value="HEAD")}, remap=false)
+    private void renderhide$allowTranslucentLayer(MutableQuadViewImpl mutableQuadViewImpl, CallbackInfo callbackInfo) {
+        if (this.renderhide$currentPos != null && this.renderhide$currentState != null
+                && RegionManager.isGhostRendered(this.renderhide$currentPos, this.renderhide$currentState)) {
+            this.forceOpaque = false;
+        }
+    }
+
+    @Inject(
+            method = {"processQuad"},
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/caffeinemc/mods/sodium/client/render/model/AbstractBlockRenderContext;shadeQuad(Lnet/caffeinemc/mods/sodium/client/render/model/MutableQuadViewImpl;Lnet/caffeinemc/mods/sodium/client/model/light/LightMode;ZLnet/caffeinemc/mods/sodium/client/render/model/SodiumShadeMode;)V",
+                    shift = At.Shift.AFTER
+            ),
+            remap = false
+    )
     private void renderhide$makeQuadTranslucent(MutableQuadViewImpl mutableQuadViewImpl, CallbackInfo callbackInfo) {
         if (this.renderhide$currentPos == null || this.renderhide$currentState == null || !RegionManager.isGhostRendered(this.renderhide$currentPos, this.renderhide$currentState)) {
             return;
@@ -78,4 +97,3 @@ abstract class SodiumGhostBlockMixin {
         return class_23502 != null && this.renderhide$currentPos != null && RegionManager.isInsideActiveRegion(this.renderhide$currentPos) ? null : class_23502;
     }
 }
-
