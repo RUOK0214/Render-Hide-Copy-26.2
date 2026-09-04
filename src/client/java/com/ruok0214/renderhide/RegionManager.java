@@ -71,6 +71,12 @@ import net.minecraft.core.registries.BuiltInRegistries;
 
 @Environment(value=EnvType.CLIENT)
 public final class RegionManager {
+    public enum BlockRenderMode {
+        NORMAL,
+        TRANSLUCENT,
+        SKIP
+    }
+
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Type REGION_LIST = new TypeToken<List<HiddenRegion>>(){}.getType();
     private static final Path CONFIG = FabricLoader.getInstance().getConfigDir().resolve("renderhide-regions.json");
@@ -216,7 +222,7 @@ public final class RegionManager {
     }
 
     public static boolean shouldImproveVisibleBlockLighting(BlockPos pos) {
-        if (!globallyEnabled) {
+        if (!globallyEnabled || hiddenBlockOpacity >= 1.0f) {
             return false;
         }
         Minecraft client = Minecraft.getInstance();
@@ -245,7 +251,7 @@ public final class RegionManager {
     }
 
     public static boolean isVirtualLightAffected(BlockPos origin) {
-        if (!virtualLightEnabled || !globallyEnabled) {
+        if (!virtualLightEnabled || !globallyEnabled || hiddenBlockOpacity >= 1.0f) {
             return false;
         }
         Minecraft client = Minecraft.getInstance();
@@ -264,7 +270,7 @@ public final class RegionManager {
     }
 
     public static boolean isVirtualLightAffected(BlockPos origin, Direction face) {
-        if (!virtualLightEnabled || !globallyEnabled) {
+        if (!virtualLightEnabled || !globallyEnabled || hiddenBlockOpacity >= 1.0f) {
             return false;
         }
         Minecraft client = Minecraft.getInstance();
@@ -365,12 +371,59 @@ public final class RegionManager {
         return hiddenBlockOpacity;
     }
 
+    public static BlockRenderMode blockRenderMode(BlockPos pos, BlockState state) {
+        if (!RegionManager.isHidden(pos, state) || hiddenBlockOpacity >= 1.0f) {
+            return BlockRenderMode.NORMAL;
+        }
+        return hiddenBlockOpacity <= 0.0f
+                ? BlockRenderMode.SKIP
+                : BlockRenderMode.TRANSLUCENT;
+    }
+
+    public static float blockRenderOpacity(BlockPos pos, BlockState state) {
+        return switch (RegionManager.blockRenderMode(pos, state)) {
+            case NORMAL -> 1.0f;
+            case TRANSLUCENT -> hiddenBlockOpacity;
+            case SKIP -> 0.0f;
+        };
+    }
+
+    public static float movingBlockRenderOpacity(BlockState state, BlockPos... positions) {
+        if (!globallyEnabled || hiddenBlockOpacity >= 1.0f
+                || RegionManager.isVisibleFilterState(state, visibleBlockFilters)) {
+            return 1.0f;
+        }
+
+        boolean inside = false;
+        String dimension = activeDimension;
+        for (BlockPos pos : positions) {
+            if (pos == null) {
+                continue;
+            }
+            for (HiddenRegion region : snapshot) {
+                if (!region.contains(pos, dimension)) {
+                    continue;
+                }
+                inside = true;
+                if (RegionManager.isVisibleFilterState(state,
+                        RegionManager.regionFilters(region.name()))) {
+                    return 1.0f;
+                }
+            }
+        }
+        return inside ? hiddenBlockOpacity : 1.0f;
+    }
+
+    public static boolean affectsOcclusion(BlockPos pos, BlockState state) {
+        return RegionManager.blockRenderMode(pos, state) != BlockRenderMode.NORMAL;
+    }
+
     public static boolean isGhostRendered(BlockPos pos, BlockState state) {
-        return hiddenBlockOpacity > 0.0f && RegionManager.isHidden(pos, state);
+        return RegionManager.blockRenderMode(pos, state) == BlockRenderMode.TRANSLUCENT;
     }
 
     public static boolean isFullyHidden(BlockPos pos, BlockState state) {
-        return hiddenBlockOpacity <= 0.0f && RegionManager.isHidden(pos, state);
+        return RegionManager.blockRenderMode(pos, state) == BlockRenderMode.SKIP;
     }
 
     public static Set<Identifier> visibleBlockFilters() {
@@ -523,10 +576,6 @@ public final class RegionManager {
         regionVisibleEntityFilters = Map.copyOf(all);
         RegionManager.saveRegionIdMap(REGION_ENTITY_FILTER_CONFIG, regionVisibleEntityFilters, "region entity filters");
         RegionManager.message("Region entity filters cleared for " + regionName + " (" + count + ").");
-    }
-
-    public static boolean shouldRenderMovingPistonBlock(BlockPos pos, BlockState pushedState) {
-        return !RegionManager.isInsideActiveRegion(pos) || RegionManager.isVisibleAt(pos, pushedState);
     }
 
     private static boolean isVisibleAt(BlockPos pos, BlockState state) {

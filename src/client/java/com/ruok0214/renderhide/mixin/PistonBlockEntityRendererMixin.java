@@ -23,22 +23,21 @@ abstract class PistonBlockEntityRendererMixin {
             float tickProgress, Vec3 cameraPos, ModelFeatureRenderer.CrumblingOverlay crumblingOverlay,
             CallbackInfo ci) {
         BlockPos pos = piston.getBlockPos();
-        BlockState carriedState = piston.getMovedState();
-
-        // Keep the accumulated pre-opacity piston rules as the single source of
-        // truth. They resolve moving_piston back to its carried block, include
-        // global/region filters, and link normal/sticky piston heads correctly.
-        boolean visible = RegionManager.shouldRenderMovingPistonBlock(pos, carriedState);
-        float opacity = visible ? 1.0F : RegionManager.hiddenBlockOpacity();
-
         if (renderState.block != null) {
-            ((MovingBlockOpacityAccess) renderState.block).renderhide$setOpacity(opacity);
-            if (opacity <= 0.0F) renderState.block = null;
+            ((MovingBlockOpacityAccess) renderState.block).renderhide$setOpacity(
+                    RegionManager.movingBlockRenderOpacity(
+                            renderState.block.blockState,
+                            pos,
+                            renderState.block.randomSeedPos,
+                            renderState.block.blockPos));
         }
         if (renderState.base != null) {
-            ((MovingBlockOpacityAccess) renderState.base).renderhide$setOpacity(opacity);
-            if (opacity <= 0.0F) renderState.base = null;
+            ((MovingBlockOpacityAccess) renderState.base).renderhide$setOpacity(
+                    RegionManager.movingBlockRenderOpacity(
+                            renderState.base.blockState,
+                            pos,
+                            renderState.base.randomSeedPos,
+                            renderState.base.blockPos));
         }
     }
 }
-

@@ -53,10 +53,16 @@ abstract class SodiumGhostBlockMixin {
         this.renderhide$currentPos = new BlockPos(class_23382.getX(), class_23382.getY(), class_23382.getZ());
     }
 
-    @Inject(method={"processQuad"}, at={@At(value="HEAD")}, remap=false)
+    @Inject(method={"processQuad"}, at={@At(value="HEAD")}, cancellable=true, remap=false)
     private void renderhide$allowTranslucentLayer(MutableQuadViewImpl mutableQuadViewImpl, CallbackInfo callbackInfo) {
-        if (this.renderhide$currentPos != null && this.renderhide$currentState != null
-                && RegionManager.isGhostRendered(this.renderhide$currentPos, this.renderhide$currentState)) {
+        if (this.renderhide$currentPos == null || this.renderhide$currentState == null) {
+            return;
+        }
+        RegionManager.BlockRenderMode mode = RegionManager.blockRenderMode(
+                this.renderhide$currentPos, this.renderhide$currentState);
+        if (mode == RegionManager.BlockRenderMode.SKIP) {
+            callbackInfo.cancel();
+        } else if (mode == RegionManager.BlockRenderMode.TRANSLUCENT) {
             this.forceOpaque = false;
         }
     }
@@ -94,6 +100,16 @@ abstract class SodiumGhostBlockMixin {
     @Redirect(method={"processQuad"}, at=@At(value="INVOKE", target="Lnet/caffeinemc/mods/sodium/client/render/model/MutableQuadViewImpl;getCullFace()Lnet/minecraft/core/Direction;"), remap=false, require=0)
     private Direction renderhide$exposeFacesBesideGhostBlocks(MutableQuadViewImpl mutableQuadViewImpl) {
         Direction class_23502 = mutableQuadViewImpl.getCullFace();
-        return class_23502 != null && this.renderhide$currentPos != null && RegionManager.isInsideActiveRegion(this.renderhide$currentPos) ? null : class_23502;
+        return class_23502 != null && this.renderhide$currentPos != null
+                && this.renderhide$currentState != null
+                && RegionManager.affectsOcclusion(this.renderhide$currentPos, this.renderhide$currentState)
+                ? null : class_23502;
+    }
+
+    @Inject(method={"renderModel"}, at={@At(value="RETURN")}, remap=false)
+    private void renderhide$clearBlock(BlockStateModel model, BlockState state, BlockPos pos,
+            BlockPos modelOffset, CallbackInfo ci) {
+        this.renderhide$currentState = null;
+        this.renderhide$currentPos = null;
     }
 }

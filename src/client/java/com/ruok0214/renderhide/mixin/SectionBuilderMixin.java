@@ -3,6 +3,7 @@ package com.ruok0214.renderhide.mixin;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.QuadInstance;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.ruok0214.renderhide.AlphaVertexConsumer;
@@ -13,6 +14,7 @@ import net.minecraft.client.renderer.block.ModelBlockRenderer;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 import net.minecraft.client.renderer.chunk.RenderSectionRegion;
 import net.minecraft.client.renderer.chunk.SectionCompiler;
+import net.minecraft.client.resources.model.geometry.BakedQuad;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.ARGB;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -27,8 +29,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Environment(EnvType.CLIENT)
 @Mixin(SectionCompiler.class)
 abstract class SectionBuilderMixin {
-    private static final ThreadLocal<BlockPos> renderhide$currentPos = new ThreadLocal<>();
-    private static final ThreadLocal<BlockState> renderhide$currentState = new ThreadLocal<>();
+    private static final ThreadLocal<RegionManager.BlockRenderMode> renderhide$currentMode = new ThreadLocal<>();
 
     @WrapOperation(
             method = "compile",
@@ -40,8 +41,7 @@ abstract class SectionBuilderMixin {
     private BlockState renderhide$captureCurrentBlock(RenderSectionRegion world, BlockPos pos,
             Operation<BlockState> original) {
         BlockState state = original.call(world, pos);
-        renderhide$currentPos.set(pos.immutable());
-        renderhide$currentState.set(state);
+        renderhide$currentMode.set(RegionManager.blockRenderMode(pos, state));
         return state;
     }
 
@@ -53,8 +53,9 @@ abstract class SectionBuilderMixin {
             )
     )
     private boolean renderhide$ghostDoesNotOcclude(BlockState state, Operation<Boolean> original) {
-        BlockPos pos = renderhide$currentPos.get();
-        return pos != null && RegionManager.isGhostRendered(pos, state) ? false : original.call(state);
+        return renderhide$currentMode.get() != RegionManager.BlockRenderMode.NORMAL
+                ? false
+                : original.call(state);
     }
 
     @ModifyExpressionValue(
@@ -65,38 +66,39 @@ abstract class SectionBuilderMixin {
             )
     )
     private boolean renderhide$ghostIsNotForcedOpaque(boolean original) {
-        BlockPos pos = renderhide$currentPos.get();
-        BlockState state = renderhide$currentState.get();
-        return pos != null && state != null && RegionManager.isGhostRendered(pos, state) ? false : original;
+        return renderhide$currentMode.get() != RegionManager.BlockRenderMode.NORMAL ? false : original;
     }
 
     @ModifyVariable(method = "getOrBeginLayer", at = @At("HEAD"), argsOnly = true)
     private ChunkSectionLayer renderhide$useTranslucentLayer(ChunkSectionLayer original) {
-        BlockPos pos = renderhide$currentPos.get();
-        BlockState state = renderhide$currentState.get();
-        return pos != null && state != null && RegionManager.isGhostRendered(pos, state)
+        return renderhide$currentMode.get() == RegionManager.BlockRenderMode.TRANSLUCENT
                 ? ChunkSectionLayer.TRANSLUCENT : original;
     }
 
-    @ModifyVariable(
+    @WrapOperation(
             method = {"lambda$compile$0", "lambda$compile$1"},
-            at = @At("HEAD"),
-            argsOnly = true
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lcom/mojang/blaze3d/vertex/BufferBuilder;putBlockBakedQuad(FFFLnet/minecraft/client/resources/model/geometry/BakedQuad;Lcom/mojang/blaze3d/vertex/QuadInstance;)V"
+            )
     )
-    private QuadInstance renderhide$applyBlockAlpha(QuadInstance instance) {
-        BlockPos pos = renderhide$currentPos.get();
-        BlockState state = renderhide$currentState.get();
-        if (pos != null && state != null && RegionManager.isGhostRendered(pos, state)) {
+    private void renderhide$emitBlockQuad(BufferBuilder builder, float x, float y, float z,
+            BakedQuad quad, QuadInstance instance, Operation<Void> original) {
+        RegionManager.BlockRenderMode mode = renderhide$currentMode.get();
+        if (mode == RegionManager.BlockRenderMode.SKIP) {
+            return;
+        }
+        if (mode == RegionManager.BlockRenderMode.TRANSLUCENT) {
             instance.multiplyColor(ARGB.white(RegionManager.hiddenBlockOpacity()));
         }
-        return instance;
+        original.call(builder, x, y, z, quad, instance);
     }
 
     @Inject(method = "lambda$compile$2", at = @At("RETURN"), cancellable = true)
     private void renderhide$applyFluidAlpha(CallbackInfoReturnable<VertexConsumer> cir) {
-        BlockPos pos = renderhide$currentPos.get();
-        BlockState state = renderhide$currentState.get();
-        if (pos != null && state != null && RegionManager.isGhostRendered(pos, state)) {
+        RegionManager.BlockRenderMode mode = renderhide$currentMode.get();
+        if (mode == RegionManager.BlockRenderMode.TRANSLUCENT
+                || mode == RegionManager.BlockRenderMode.SKIP) {
             cir.setReturnValue(new AlphaVertexConsumer(cir.getReturnValue(), RegionManager.hiddenBlockOpacity()));
         }
     }
@@ -111,7 +113,6 @@ abstract class SectionBuilderMixin {
 
     @Inject(method = "compile", at = @At("RETURN"))
     private void renderhide$clearCapturedBlock(CallbackInfoReturnable<SectionCompiler.Results> cir) {
-        renderhide$currentPos.remove();
-        renderhide$currentState.remove();
+        renderhide$currentMode.remove();
     }
 }

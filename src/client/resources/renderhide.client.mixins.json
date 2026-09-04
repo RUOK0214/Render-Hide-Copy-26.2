@@ -5,16 +5,16 @@
   "client": [
     "BlockModelRendererMixin",
     "BlockRenderManagerMixin",
-    "ChunkRendererRegionMixin",
     "EntityRenderManagerMixin",
     "FallingBlockCommandRendererMixin",
     "MovingBlockRenderStateMixin",
     "MovingBlockSubmissionMixin",
     "PistonBlockEntityRendererMixin",
     "SectionBuilderMixin",
-    "SodiumLevelSliceMixin",
     "SodiumGhostBlockMixin",
     "SodiumBlockOcclusionMixin",
+    "SodiumSectionCompilerMixin",
+    "SodiumFluidRendererMixin",
     "SodiumVirtualLightMixin",
     "SodiumLightPipelineMixin"
   ],

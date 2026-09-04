@@ -10,9 +10,7 @@ import net.minecraft.client.renderer.block.ModelBlockRenderer;
 import net.minecraft.client.renderer.block.MovingBlockRenderState;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 import net.minecraft.client.renderer.feature.MovingBlockFeatureRenderer;
-import net.minecraft.core.BlockPos;
 import net.minecraft.util.ARGB;
-import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -47,18 +45,20 @@ abstract class FallingBlockCommandRendererMixin {
             )
     )
     private boolean renderhide$ghostIsNotForcedOpaque(boolean original) {
-        return renderhide$currentOpacity() < 1.0F ? false : original;
+        float opacity = renderhide$currentOpacity();
+        return opacity > 0.0F && opacity < 1.0F ? false : original;
     }
 
     @ModifyVariable(method = "putBakedQuad", at = @At("HEAD"), argsOnly = true)
     private ChunkSectionLayer renderhide$useTranslucentLayer(ChunkSectionLayer original) {
-        return renderhide$currentOpacity() < 1.0F ? ChunkSectionLayer.TRANSLUCENT : original;
+        float opacity = renderhide$currentOpacity();
+        return opacity > 0.0F && opacity < 1.0F ? ChunkSectionLayer.TRANSLUCENT : original;
     }
 
     @ModifyVariable(method = "putBakedQuad", at = @At("HEAD"), argsOnly = true)
     private QuadInstance renderhide$applyMovingAlpha(QuadInstance instance) {
         float opacity = renderhide$currentOpacity();
-        if (opacity < 1.0F) {
+        if (opacity > 0.0F && opacity < 1.0F) {
             instance.multiplyColor(ARGB.white(opacity));
         }
         return instance;
@@ -79,21 +79,7 @@ abstract class FallingBlockCommandRendererMixin {
         if (!Float.isNaN(stored)) {
             return stored;
         }
-        return renderhide$opacityAt(moving, moving.blockState);
-    }
-
-    @Unique
-    private static float renderhide$opacityAt(MovingBlockRenderState moving, BlockState state) {
-        BlockPos seedPos = moving.randomSeedPos;
-        BlockPos blockPos = moving.blockPos;
-        if ((seedPos != null && RegionManager.isFullyHidden(seedPos, state))
-                || (blockPos != null && RegionManager.isFullyHidden(blockPos, state))) {
-            return 0.0F;
-        }
-        if ((seedPos != null && RegionManager.isGhostRendered(seedPos, state))
-                || (blockPos != null && RegionManager.isGhostRendered(blockPos, state))) {
-            return RegionManager.hiddenBlockOpacity();
-        }
-        return 1.0F;
+        return RegionManager.movingBlockRenderOpacity(
+                moving.blockState, moving.randomSeedPos, moving.blockPos);
     }
 }
