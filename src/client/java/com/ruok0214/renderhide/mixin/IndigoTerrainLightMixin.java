@@ -7,9 +7,9 @@
  *  net.fabricmc.fabric.impl.client.indigo.renderer.mesh.MutableQuadViewImpl
  *  net.fabricmc.fabric.impl.client.indigo.renderer.render.AbstractTerrainRenderContext
  *  net.fabricmc.fabric.impl.client.indigo.renderer.render.BlockRenderInfo
- *  net.minecraft.class_1944
- *  net.minecraft.class_2350
- *  net.minecraft.class_765
+ *  net.minecraft.LightLayer
+ *  net.minecraft.Direction
+ *  net.minecraft.LightTexture
  *  org.spongepowered.asm.mixin.Final
  *  org.spongepowered.asm.mixin.Mixin
  *  org.spongepowered.asm.mixin.Shadow
@@ -25,9 +25,9 @@ import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.impl.client.indigo.renderer.mesh.MutableQuadViewImpl;
 import net.fabricmc.fabric.impl.client.indigo.renderer.render.AbstractTerrainRenderContext;
 import net.fabricmc.fabric.impl.client.indigo.renderer.render.BlockRenderInfo;
-import net.minecraft.class_1944;
-import net.minecraft.class_2350;
-import net.minecraft.class_765;
+import net.minecraft.world.level.LightLayer;
+import net.minecraft.core.Direction;
+import net.minecraft.client.renderer.LightTexture;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -47,17 +47,17 @@ abstract class IndigoTerrainLightMixin {
 
     @Inject(method={"shadeQuad"}, at={@At(value="RETURN")}, remap=false)
     private void renderhide$applyVirtualLight(MutableQuadViewImpl quad, boolean ao, boolean emissive, boolean vanillaShade, CallbackInfo ci) {
-        class_2350 face;
-        class_2350 class_23502 = face = quad.cullFace() != null ? quad.cullFace() : quad.lightFace();
+        Direction face;
+        Direction class_23502 = face = quad.cullFace() != null ? quad.cullFace() : quad.lightFace();
         if (!RegionManager.isVirtualLightAffected(this.blockInfo.blockPos, face)) {
             return;
         }
         for (int vertex = 0; vertex < 4; ++vertex) {
             int original = quad.lightmap(vertex);
-            int block = RegionManager.virtualLightLevel(class_1944.field_9282, this.blockInfo.blockPos, face, class_765.method_24186((int)original));
-            int sky = RegionManager.virtualLightLevel(class_1944.field_9284, this.blockInfo.blockPos, face, class_765.method_24187((int)original));
-            int virtual = class_765.method_23687((int)block, (int)sky);
-            int merged = class_765.method_23687((int)Math.max(class_765.method_24186((int)original), class_765.method_24186((int)virtual)), (int)Math.max(class_765.method_24187((int)original), class_765.method_24187((int)virtual)));
+            int block = RegionManager.virtualLightLevel(LightLayer.BLOCK, this.blockInfo.blockPos, face, LightTexture.block((int)original));
+            int sky = RegionManager.virtualLightLevel(LightLayer.SKY, this.blockInfo.blockPos, face, LightTexture.sky((int)original));
+            int virtual = LightTexture.pack((int)block, (int)sky);
+            int merged = LightTexture.pack((int)Math.max(LightTexture.block((int)original), LightTexture.block((int)virtual)), (int)Math.max(LightTexture.sky((int)original), LightTexture.sky((int)virtual)));
             quad.lightmap(vertex, merged);
         }
     }

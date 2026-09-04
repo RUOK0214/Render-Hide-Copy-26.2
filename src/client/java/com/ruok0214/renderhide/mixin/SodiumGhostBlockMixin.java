@@ -3,11 +3,11 @@
  * 
  * Could not load the following classes:
  *  net.caffeinemc.mods.sodium.client.render.model.MutableQuadViewImpl
- *  net.minecraft.class_1087
- *  net.minecraft.class_11515
- *  net.minecraft.class_2338
- *  net.minecraft.class_2350
- *  net.minecraft.class_2680
+ *  net.minecraft.BlockStateModel
+ *  net.minecraft.ChunkSectionLayer
+ *  net.minecraft.BlockPos
+ *  net.minecraft.Direction
+ *  net.minecraft.BlockState
  *  org.spongepowered.asm.mixin.Mixin
  *  org.spongepowered.asm.mixin.Pseudo
  *  org.spongepowered.asm.mixin.Unique
@@ -20,11 +20,11 @@ package com.ruok0214.renderhide.mixin;
 
 import com.ruok0214.renderhide.RegionManager;
 import net.caffeinemc.mods.sodium.client.render.model.MutableQuadViewImpl;
-import net.minecraft.class_1087;
-import net.minecraft.class_11515;
-import net.minecraft.class_2338;
-import net.minecraft.class_2350;
-import net.minecraft.class_2680;
+import net.minecraft.client.renderer.block.model.BlockStateModel;
+import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Unique;
@@ -37,17 +37,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(targets={"net/caffeinemc/mods/sodium/client/render/chunk/compile/pipeline/BlockRenderer"}, remap=false)
 abstract class SodiumGhostBlockMixin {
     @Unique
-    private class_2680 renderhide$currentState;
+    private BlockState renderhide$currentState;
     @Unique
-    private class_2338 renderhide$currentPos;
+    private BlockPos renderhide$currentPos;
 
     SodiumGhostBlockMixin() {
     }
 
     @Inject(method={"renderModel"}, at={@At(value="HEAD")}, remap=false)
-    private void renderhide$captureBlock(class_1087 class_10872, class_2680 class_26802, class_2338 class_23382, class_2338 class_23383, CallbackInfo callbackInfo) {
+    private void renderhide$captureBlock(BlockStateModel class_10872, BlockState class_26802, BlockPos class_23382, BlockPos class_23383, CallbackInfo callbackInfo) {
         this.renderhide$currentState = class_26802;
-        this.renderhide$currentPos = new class_2338(class_23382.method_10263(), class_23382.method_10264(), class_23382.method_10260());
+        this.renderhide$currentPos = new BlockPos(class_23382.getX(), class_23382.getY(), class_23382.getZ());
     }
 
     @Inject(method={"processQuad"}, at={@At(value="HEAD")}, remap=false)
@@ -64,17 +64,17 @@ abstract class SodiumGhostBlockMixin {
         }
     }
 
-    @Redirect(method={"processQuad"}, at=@At(value="INVOKE", target="Lnet/caffeinemc/mods/sodium/client/render/model/MutableQuadViewImpl;getRenderType()Lnet/minecraft/class_11515;"), remap=false)
-    private class_11515 renderhide$useTranslucentLayer(MutableQuadViewImpl mutableQuadViewImpl) {
+    @Redirect(method={"processQuad"}, at=@At(value="INVOKE", target="Lnet/caffeinemc/mods/sodium/client/render/model/MutableQuadViewImpl;getRenderType()Lnet/minecraft/client/renderer/chunk/ChunkSectionLayer;"), remap=false)
+    private ChunkSectionLayer renderhide$useTranslucentLayer(MutableQuadViewImpl mutableQuadViewImpl) {
         if (this.renderhide$currentPos != null && this.renderhide$currentState != null && RegionManager.isGhostRendered(this.renderhide$currentPos, this.renderhide$currentState)) {
-            return class_11515.field_60926;
+            return ChunkSectionLayer.TRANSLUCENT;
         }
         return mutableQuadViewImpl.getRenderType();
     }
 
-    @Redirect(method={"processQuad"}, at=@At(value="INVOKE", target="Lnet/caffeinemc/mods/sodium/client/render/model/MutableQuadViewImpl;getCullFace()Lnet/minecraft/class_2350;"), remap=false, require=0)
-    private class_2350 renderhide$exposeFacesBesideGhostBlocks(MutableQuadViewImpl mutableQuadViewImpl) {
-        class_2350 class_23502 = mutableQuadViewImpl.getCullFace();
+    @Redirect(method={"processQuad"}, at=@At(value="INVOKE", target="Lnet/caffeinemc/mods/sodium/client/render/model/MutableQuadViewImpl;getCullFace()Lnet/minecraft/core/Direction;"), remap=false, require=0)
+    private Direction renderhide$exposeFacesBesideGhostBlocks(MutableQuadViewImpl mutableQuadViewImpl) {
+        Direction class_23502 = mutableQuadViewImpl.getCullFace();
         return class_23502 != null && this.renderhide$currentPos != null && RegionManager.isInsideActiveRegion(this.renderhide$currentPos) ? null : class_23502;
     }
 }

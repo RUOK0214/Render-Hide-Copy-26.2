@@ -4,9 +4,9 @@
  * Could not load the following classes:
  *  net.fabricmc.api.EnvType
  *  net.fabricmc.api.Environment
- *  net.minecraft.class_2246
- *  net.minecraft.class_2338
- *  net.minecraft.class_2680
+ *  net.minecraft.Blocks
+ *  net.minecraft.BlockPos
+ *  net.minecraft.BlockState
  *  org.spongepowered.asm.mixin.Mixin
  *  org.spongepowered.asm.mixin.Pseudo
  *  org.spongepowered.asm.mixin.injection.At
@@ -21,9 +21,9 @@ import com.ruok0214.renderhide.RenderHideClient;
 import java.util.concurrent.atomic.AtomicBoolean;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.class_2246;
-import net.minecraft.class_2338;
-import net.minecraft.class_2680;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
@@ -40,16 +40,15 @@ abstract class SodiumLevelSliceMixin {
     SodiumLevelSliceMixin() {
     }
 
-    @Inject(target={@Desc(ret=class_2680.class, args={int.class, int.class, int.class}, value="getBlockState")}, at={@At(value="RETURN")}, cancellable=true, remap=false)
-    private void renderhide$treatHiddenBlocksAsAir(int x, int y, int z, CallbackInfoReturnable<class_2680> cir) {
-        class_2338 pos = new class_2338(x, y, z);
-        if (RegionManager.isFullyHidden(pos, (class_2680)cir.getReturnValue())) {
+    @Inject(target={@Desc(ret=BlockState.class, args={int.class, int.class, int.class}, value="getBlockState")}, at={@At(value="RETURN")}, cancellable=true, remap=false)
+    private void renderhide$treatHiddenBlocksAsAir(int x, int y, int z, CallbackInfoReturnable<BlockState> cir) {
+        BlockPos pos = new BlockPos(x, y, z);
+        if (RegionManager.isFullyHidden(pos, (BlockState)cir.getReturnValue())) {
             if (RENDERHIDE$LOGGED.compareAndSet(false, true)) {
                 RenderHideClient.LOGGER.info("Sodium mesh filter active at {}, {}, {}", new Object[]{x, y, z});
             }
-            cir.setReturnValue((Object)class_2246.field_10124.method_9564());
+            cir.setReturnValue((Object)Blocks.AIR.defaultBlockState());
         }
     }
 }
-
 

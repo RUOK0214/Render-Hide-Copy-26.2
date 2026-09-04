@@ -6,8 +6,8 @@
  *  net.caffeinemc.mods.sodium.client.model.quad.ModelQuadView
  *  net.fabricmc.api.EnvType
  *  net.fabricmc.api.Environment
- *  net.minecraft.class_2338
- *  net.minecraft.class_2350
+ *  net.minecraft.BlockPos
+ *  net.minecraft.Direction
  *  org.spongepowered.asm.mixin.Mixin
  *  org.spongepowered.asm.mixin.Pseudo
  *  org.spongepowered.asm.mixin.injection.At
@@ -21,8 +21,8 @@ import net.caffeinemc.mods.sodium.client.model.light.data.QuadLightData;
 import net.caffeinemc.mods.sodium.client.model.quad.ModelQuadView;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.class_2338;
-import net.minecraft.class_2350;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
@@ -39,7 +39,7 @@ abstract class SodiumLightPipelineMixin {
     }
 
     @Inject(method={"calculate"}, at={@At(value="RETURN")}, remap=false)
-    private void renderhide$improveVisibleBlockLighting(ModelQuadView quad, class_2338 pos, QuadLightData out, class_2350 cullFace, class_2350 lightFace, boolean shade, boolean enhanced, CallbackInfo ci) {
+    private void renderhide$improveVisibleBlockLighting(ModelQuadView quad, BlockPos pos, QuadLightData out, Direction cullFace, Direction lightFace, boolean shade, boolean enhanced, CallbackInfo ci) {
         if (!RegionManager.shouldImproveVisibleBlockLighting(pos)) {
             return;
         }

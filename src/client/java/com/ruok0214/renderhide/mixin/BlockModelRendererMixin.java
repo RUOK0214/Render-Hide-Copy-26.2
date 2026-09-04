@@ -4,11 +4,11 @@
  * Could not load the following classes:
  *  net.fabricmc.api.EnvType
  *  net.fabricmc.api.Environment
- *  net.minecraft.class_1920
- *  net.minecraft.class_2338
- *  net.minecraft.class_2350
- *  net.minecraft.class_2680
- *  net.minecraft.class_778
+ *  net.minecraft.BlockAndTintGetter
+ *  net.minecraft.BlockPos
+ *  net.minecraft.Direction
+ *  net.minecraft.BlockState
+ *  net.minecraft.ModelBlockRenderer
  *  org.spongepowered.asm.mixin.Mixin
  *  org.spongepowered.asm.mixin.injection.At
  *  org.spongepowered.asm.mixin.injection.Inject
@@ -19,25 +19,25 @@ package com.ruok0214.renderhide.mixin;
 import com.ruok0214.renderhide.RegionManager;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.class_1920;
-import net.minecraft.class_2338;
-import net.minecraft.class_2350;
-import net.minecraft.class_2680;
-import net.minecraft.class_778;
+import net.minecraft.world.level.BlockAndTintGetter;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.client.renderer.block.ModelBlockRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Environment(value=EnvType.CLIENT)
-@Mixin(value={class_778.class})
+@Mixin(value={ModelBlockRenderer.class})
 abstract class BlockModelRendererMixin {
     BlockModelRendererMixin() {
     }
 
-    @Inject(method={"method_68826"}, at={@At(value="HEAD")}, cancellable=true)
-    private static void renderhide$exposeBoundary(class_1920 world, class_2680 state, boolean cull, class_2350 direction, class_2338 neighborPos, CallbackInfoReturnable<Boolean> cir) {
-        if (RegionManager.isHidden(neighborPos, world.method_8320(neighborPos))) {
+    @Inject(method={"shouldRenderFace"}, at={@At(value="HEAD")}, cancellable=true)
+    private static void renderhide$exposeBoundary(BlockAndTintGetter world, BlockState state, boolean cull, Direction direction, BlockPos neighborPos, CallbackInfoReturnable<Boolean> cir) {
+        if (RegionManager.isHidden(neighborPos, world.getBlockState(neighborPos))) {
             cir.setReturnValue((Object)true);
         }
     }

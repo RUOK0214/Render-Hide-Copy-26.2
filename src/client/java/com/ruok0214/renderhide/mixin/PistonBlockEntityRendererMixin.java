@@ -2,28 +2,28 @@ package com.ruok0214.renderhide.mixin;
 
 import com.ruok0214.renderhide.MovingBlockOpacityAccess;
 import com.ruok0214.renderhide.RegionManager;
-import net.minecraft.class_11968;
-import net.minecraft.class_11683;
-import net.minecraft.class_2338;
-import net.minecraft.class_243;
-import net.minecraft.class_2669;
-import net.minecraft.class_2680;
+import net.minecraft.client.renderer.blockentity.state.PistonHeadRenderState;
+import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.level.block.piston.PistonMovingBlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(targets = "net/minecraft/class_835", remap = false)
+@Mixin(targets = "net/minecraft/client/renderer/blockentity/PistonHeadRenderer", remap = false)
 abstract class PistonBlockEntityRendererMixin {
     @Inject(
-            method = "method_74380(Lnet/minecraft/class_2669;Lnet/minecraft/class_11968;FLnet/minecraft/class_243;Lnet/minecraft/class_11683$class_11792;)V",
+            method = "extractRenderState(Lnet/minecraft/world/level/block/piston/PistonMovingBlockEntity;Lnet/minecraft/client/renderer/blockentity/state/PistonHeadRenderState;FLnet/minecraft/world/phys/Vec3;Lnet/minecraft/client/renderer/feature/ModelFeatureRenderer$CrumblingOverlay;)V",
             at = @At("RETURN")
     )
-    private void renderhide$filterCarriedBlock(class_2669 piston, class_11968 renderState,
-            float tickProgress, class_243 cameraPos, class_11683.class_11792 crumblingOverlay,
+    private void renderhide$filterCarriedBlock(PistonMovingBlockEntity piston, PistonHeadRenderState renderState,
+            float tickProgress, Vec3 cameraPos, ModelFeatureRenderer.CrumblingOverlay crumblingOverlay,
             CallbackInfo ci) {
-        class_2338 pos = piston.method_11016();
-        class_2680 carriedState = piston.method_11495();
+        BlockPos pos = piston.getBlockPos();
+        BlockState carriedState = piston.getMovedState();
 
         // Keep the accumulated pre-opacity piston rules as the single source of
         // truth. They resolve moving_piston back to its carried block, include
@@ -31,13 +31,13 @@ abstract class PistonBlockEntityRendererMixin {
         boolean visible = RegionManager.shouldRenderMovingPistonBlock(pos, carriedState);
         float opacity = visible ? 1.0F : RegionManager.hiddenBlockOpacity();
 
-        if (renderState.field_62729 != null) {
-            ((MovingBlockOpacityAccess) renderState.field_62729).renderhide$setOpacity(opacity);
-            if (opacity <= 0.0F) renderState.field_62729 = null;
+        if (renderState.block != null) {
+            ((MovingBlockOpacityAccess) renderState.block).renderhide$setOpacity(opacity);
+            if (opacity <= 0.0F) renderState.block = null;
         }
-        if (renderState.field_62730 != null) {
-            ((MovingBlockOpacityAccess) renderState.field_62730).renderhide$setOpacity(opacity);
-            if (opacity <= 0.0F) renderState.field_62730 = null;
+        if (renderState.base != null) {
+            ((MovingBlockOpacityAccess) renderState.base).renderhide$setOpacity(opacity);
+            if (opacity <= 0.0F) renderState.base = null;
         }
     }
 }

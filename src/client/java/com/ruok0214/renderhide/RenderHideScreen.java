@@ -4,17 +4,17 @@
  * Could not load the following classes:
  *  net.fabricmc.api.EnvType
  *  net.fabricmc.api.Environment
- *  net.minecraft.class_11908
- *  net.minecraft.class_2338
- *  net.minecraft.class_2561
- *  net.minecraft.class_2960
- *  net.minecraft.class_332
- *  net.minecraft.class_342
- *  net.minecraft.class_357
- *  net.minecraft.class_364
- *  net.minecraft.class_4185
- *  net.minecraft.class_437
- *  net.minecraft.class_7923
+ *  net.minecraft.KeyEvent
+ *  net.minecraft.BlockPos
+ *  net.minecraft.Component
+ *  net.minecraft.ResourceLocation
+ *  net.minecraft.GuiGraphics
+ *  net.minecraft.EditBox
+ *  net.minecraft.AbstractSliderButton
+ *  net.minecraft.GuiEventListener
+ *  net.minecraft.Button
+ *  net.minecraft.Screen
+ *  net.minecraft.BuiltInRegistries
  */
 package com.ruok0214.renderhide;
 
@@ -29,29 +29,29 @@ import java.util.Locale;
 import java.util.Set;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.class_11908;
-import net.minecraft.class_2338;
-import net.minecraft.class_2561;
-import net.minecraft.class_2960;
-import net.minecraft.class_332;
-import net.minecraft.class_342;
-import net.minecraft.class_357;
-import net.minecraft.class_364;
-import net.minecraft.class_4185;
-import net.minecraft.class_437;
-import net.minecraft.class_7923;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.AbstractSliderButton;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 @Environment(value=EnvType.CLIENT)
 public final class RenderHideScreen
-extends class_437 {
+extends Screen {
     private static final int ROWS = 6;
     private int regionPage;
     private int filterPage;
-    private class_342 regionName;
-    private class_342 filterId;
+    private EditBox regionName;
+    private EditBox filterId;
     private String rememberedRegionName = "region";
     private String rememberedFilterId = "";
-    private class_2960 filterSuggestion;
+    private ResourceLocation filterSuggestion;
     private boolean editingSelection;
     private String editingRegion;
     private boolean editingRegionFilters;
@@ -59,13 +59,13 @@ extends class_437 {
     private boolean editingEntityFilters;
     private boolean entityFiltersForRegion;
     private int regionFilterPage;
-    private final class_342[] coordinates = new class_342[6];
+    private final EditBox[] coordinates = new EditBox[6];
 
     public RenderHideScreen() {
-        super((class_2561)class_2561.method_43470((String)"Render Hide"));
+        super((Component)Component.literal((String)"Render Hide"));
     }
 
-    protected void method_25426() {
+    protected void init() {
         if (this.editingEntityFilters) {
             this.initEntityFilterEditor();
             return;
@@ -78,177 +78,177 @@ extends class_437 {
             this.initCoordinateEditor();
             return;
         }
-        int panelWidth = Math.min(470, this.field_22789 - 20);
-        int left = (this.field_22789 - panelWidth) / 2;
+        int panelWidth = Math.min(470, this.width - 20);
+        int left = (this.width - panelWidth) / 2;
         int gap = 8;
         int columnWidth = (panelWidth - gap) / 2;
-        this.method_37063(class_4185.method_46430((class_2561)RenderHideScreen.toggleText("Hiding", RegionManager.isGloballyEnabled()), b -> {
+        this.addRenderableWidget(Button.builder((Component)RenderHideScreen.toggleText("Hiding", RegionManager.isGloballyEnabled()), b -> {
             RegionManager.toggleGlobal();
             this.rebuild();
-        }).method_46434(left, 28, (panelWidth - 2 * gap) / 3, 20).method_46431());
-        this.method_37063(class_4185.method_46430((class_2561)RenderHideScreen.toggleText("Virtual light", RegionManager.isVirtualLightEnabled()), b -> {
+        }).bounds(left, 28, (panelWidth - 2 * gap) / 3, 20).build());
+        this.addRenderableWidget(Button.builder((Component)RenderHideScreen.toggleText("Virtual light", RegionManager.isVirtualLightEnabled()), b -> {
             RegionManager.toggleVirtualLight();
             this.rebuild();
-        }).method_46434(left + (panelWidth + gap) / 3, 28, (panelWidth - 2 * gap) / 3, 20).method_46431());
-        this.method_37063(class_4185.method_46430((class_2561)RenderHideScreen.toggleText("Outlines", SelectionOverlayRenderer.areSavedRegionsShown()), b -> {
+        }).bounds(left + (panelWidth + gap) / 3, 28, (panelWidth - 2 * gap) / 3, 20).build());
+        this.addRenderableWidget(Button.builder((Component)RenderHideScreen.toggleText("Outlines", SelectionOverlayRenderer.areSavedRegionsShown()), b -> {
             SelectionOverlayRenderer.toggleSavedRegions();
             this.rebuild();
-        }).method_46434(left + 2 * (panelWidth + gap) / 3, 28, (panelWidth - 2 * gap) / 3, 20).method_46431());
-        this.method_37063(class_4185.method_46430((class_2561)class_2561.method_43470((String)("Global block filters (" + RegionManager.visibleBlockFilters().size() + ")")), b -> {
+        }).bounds(left + 2 * (panelWidth + gap) / 3, 28, (panelWidth - 2 * gap) / 3, 20).build());
+        this.addRenderableWidget(Button.builder((Component)Component.literal((String)("Global block filters (" + RegionManager.visibleBlockFilters().size() + ")")), b -> {
             this.editingGlobalBlockFilters = true;
             this.rememberedFilterId = "";
             this.regionFilterPage = 0;
             this.rebuild();
-        }).method_46434(left, 55, columnWidth, 20).method_46431());
-        this.method_37063(class_4185.method_46430((class_2561)class_2561.method_43470((String)("Global entity filters (" + RegionManager.visibleEntityFilters().size() + ")")), b -> {
+        }).bounds(left, 55, columnWidth, 20).build());
+        this.addRenderableWidget(Button.builder((Component)Component.literal((String)("Global entity filters (" + RegionManager.visibleEntityFilters().size() + ")")), b -> {
             this.editingEntityFilters = true;
             this.entityFiltersForRegion = false;
             this.rememberedFilterId = "";
             this.regionFilterPage = 0;
             this.rebuild();
-        }).method_46434(left + columnWidth + gap, 55, columnWidth, 20).method_46431());
-        this.method_37063(new OpacitySlider(left, 81, panelWidth, 20));
-        this.method_37063(class_4185.method_46430((class_2561)class_2561.method_43470((String)"Edit coords"), b -> {
+        }).bounds(left + columnWidth + gap, 55, columnWidth, 20).build());
+        this.addRenderableWidget(new OpacitySlider(left, 81, panelWidth, 20));
+        this.addRenderableWidget(Button.builder((Component)Component.literal((String)"Edit coords"), b -> {
             this.editingSelection = true;
             this.rebuild();
-        }).method_46434(left, 107, panelWidth, 20).method_46431());
-        this.regionName = new class_342(this.field_22793, left, 143, panelWidth - 64, 20, (class_2561)class_2561.method_43470((String)"Region name"));
-        this.regionName.method_1880(32);
-        this.regionName.method_47404((class_2561)class_2561.method_43470((String)"region name"));
-        this.regionName.method_1852(this.rememberedRegionName);
-        this.regionName.method_1863(value -> {
+        }).bounds(left, 107, panelWidth, 20).build());
+        this.regionName = new EditBox(this.font, left, 143, panelWidth - 64, 20, (Component)Component.literal((String)"Region name"));
+        this.regionName.setMaxLength(32);
+        this.regionName.setHint((Component)Component.literal((String)"region name"));
+        this.regionName.setValue(this.rememberedRegionName);
+        this.regionName.setResponder(value -> {
             this.rememberedRegionName = value;
         });
-        this.method_37063(this.regionName);
-        this.method_37063(class_4185.method_46430((class_2561)class_2561.method_43470((String)"Add"), b -> {
-            if (RegionManager.add(this.regionName.method_1882())) {
+        this.addRenderableWidget(this.regionName);
+        this.addRenderableWidget(Button.builder((Component)Component.literal((String)"Add"), b -> {
+            if (RegionManager.add(this.regionName.getValue())) {
                 this.rebuild();
             }
-        }).method_46434(left + panelWidth - 60, 143, 60, 20).method_46431());
+        }).bounds(left + panelWidth - 60, 143, 60, 20).build());
         List<HiddenRegion> regions = RegionManager.regions();
         this.regionPage = RenderHideScreen.clampPage(this.regionPage, regions.size());
         int regionStart = this.regionPage * 6;
         for (int row = 0; row < 6 && regionStart + row < regions.size(); ++row) {
             HiddenRegion region = regions.get(regionStart + row);
             int y = 170 + row * 23;
-            this.method_37063(class_4185.method_46430((class_2561)class_2561.method_43470((String)((region.enabled() ? "ON  " : "OFF ") + region.name())), b -> {
+            this.addRenderableWidget(Button.builder((Component)Component.literal((String)((region.enabled() ? "ON  " : "OFF ") + region.name())), b -> {
                 this.editingRegion = region.name();
                 this.rebuild();
-            }).method_46434(left, y, panelWidth, 20).method_46431());
+            }).bounds(left, y, panelWidth, 20).build());
         }
         int navY = 311;
-        this.method_37063(class_4185.method_46430((class_2561)class_2561.method_43470((String)"\u2039"), b -> {
+        this.addRenderableWidget(Button.builder((Component)Component.literal((String)"\u2039"), b -> {
             if (this.regionPage > 0) {
                 --this.regionPage;
                 this.rebuild();
             }
-        }).method_46434(left, navY, 28, 20).method_46431());
-        this.method_37063(class_4185.method_46430((class_2561)class_2561.method_43470((String)"\u203a"), b -> {
+        }).bounds(left, navY, 28, 20).build());
+        this.addRenderableWidget(Button.builder((Component)Component.literal((String)"\u203a"), b -> {
             if ((this.regionPage + 1) * 6 < regions.size()) {
                 ++this.regionPage;
                 this.rebuild();
             }
-        }).method_46434(left + panelWidth - 28, navY, 28, 20).method_46431());
-        this.method_37063(class_4185.method_46430((class_2561)class_2561.method_43470((String)"Done"), b -> this.method_25419()).method_46434((this.field_22789 - 120) / 2, 338, 120, 20).method_46431());
+        }).bounds(left + panelWidth - 28, navY, 28, 20).build());
+        this.addRenderableWidget(Button.builder((Component)Component.literal((String)"Done"), b -> this.onClose()).bounds((this.width - 120) / 2, 338, 120, 20).build());
     }
 
     private void updateFilterSuggestion(String value) {
         this.rememberedFilterId = value;
         String query = value.trim().toLowerCase(Locale.ROOT);
         this.filterSuggestion = null;
-        this.filterId.method_1887(null);
+        this.filterId.setSuggestion(null);
         if (query.isEmpty()) {
             return;
         }
         boolean qualified = query.indexOf(58) >= 0;
-        Set ids = this.editingEntityFilters ? class_7923.field_41177.method_10235() : class_7923.field_41175.method_10235();
-        for (class_2960 id : ids.stream().sorted().toList()) {
-            String candidate = qualified ? id.toString() : id.method_12832();
+        Set ids = this.editingEntityFilters ? BuiltInRegistries.ENTITY_TYPE.keySet() : BuiltInRegistries.BLOCK.keySet();
+        for (ResourceLocation id : ids.stream().sorted().toList()) {
+            String candidate = qualified ? id.toString() : id.getPath();
             if (!candidate.startsWith(query) || candidate.equals(query)) continue;
             this.filterSuggestion = id;
-            this.filterId.method_1887(candidate.substring(query.length()));
+            this.filterId.setSuggestion(candidate.substring(query.length()));
             return;
         }
     }
 
-    public boolean method_25404(class_11908 input) {
-        if (!this.editingSelection && this.filterId != null && this.filterId.method_25370()) {
-            if (input.comp_4795() == 258 && this.filterSuggestion != null) {
-                this.filterId.method_1852(this.filterSuggestion.toString());
+    public boolean keyPressed(KeyEvent input) {
+        if (!this.editingSelection && this.filterId != null && this.filterId.isFocused()) {
+            if (input.key() == 258 && this.filterSuggestion != null) {
+                this.filterId.setValue(this.filterSuggestion.toString());
                 return true;
             }
-            if (input.comp_4795() == 257 || input.comp_4795() == 335) {
+            if (input.key() == 257 || input.key() == 335) {
                 this.addFilter();
                 return true;
             }
         }
-        return super.method_25404(input);
+        return super.keyPressed(input);
     }
 
     private void initCoordinateEditor() {
-        class_2338 second;
-        class_2338 first;
+        BlockPos second;
+        BlockPos first;
         HiddenRegion region;
-        int panelWidth = Math.min(390, this.field_22789 - 20);
-        int left = (this.field_22789 - panelWidth) / 2;
+        int panelWidth = Math.min(390, this.width - 20);
+        int left = (this.width - panelWidth) / 2;
         HiddenRegion hiddenRegion = region = this.editingRegion == null ? null : RegionManager.find(this.editingRegion);
         if (this.editingSelection) {
             first = RegionManager.getPos1();
             second = RegionManager.getPos2();
         } else if (region != null) {
-            first = new class_2338(region.minX(), region.minY(), region.minZ());
-            second = new class_2338(region.maxX(), region.maxY(), region.maxZ());
+            first = new BlockPos(region.minX(), region.minY(), region.minZ());
+            second = new BlockPos(region.maxX(), region.maxY(), region.maxZ());
         } else {
             this.editingRegion = null;
             this.rebuild();
             return;
         }
-        int[] values = new int[]{first == null ? 0 : first.method_10263(), first == null ? 0 : first.method_10264(), first == null ? 0 : first.method_10260(), second == null ? 0 : second.method_10263(), second == null ? 0 : second.method_10264(), second == null ? 0 : second.method_10260()};
+        int[] values = new int[]{first == null ? 0 : first.getX(), first == null ? 0 : first.getY(), first == null ? 0 : first.getZ(), second == null ? 0 : second.getX(), second == null ? 0 : second.getY(), second == null ? 0 : second.getZ()};
         String[] labels = new String[]{"X1", "Y1", "Z1", "X2", "Y2", "Z2"};
         for (int i = 0; i < 6; ++i) {
             int column = i % 3;
             int row = i / 3;
             int x = left + column * 130;
             int y = 82 + row * 48;
-            this.coordinates[i] = new class_342(this.field_22793, x, y, 120, 20, (class_2561)class_2561.method_43470((String)labels[i]));
-            this.coordinates[i].method_1880(12);
-            this.coordinates[i].method_1852(Integer.toString(values[i]));
-            this.coordinates[i].method_1890(value -> value.isEmpty() || value.equals("-") || value.matches("-?\\d+"));
-            this.method_37063(this.coordinates[i]);
+            this.coordinates[i] = new EditBox(this.font, x, y, 120, 20, (Component)Component.literal((String)labels[i]));
+            this.coordinates[i].setMaxLength(12);
+            this.coordinates[i].setValue(Integer.toString(values[i]));
+            this.coordinates[i].setFilter(value -> value.isEmpty() || value.equals("-") || value.matches("-?\\d+"));
+            this.addRenderableWidget(this.coordinates[i]);
         }
-        this.method_37063(class_4185.method_46430((class_2561)class_2561.method_43470((String)"Save coordinates"), b -> this.saveCoordinates()).method_46434(left, 187, panelWidth, 20).method_46431());
+        this.addRenderableWidget(Button.builder((Component)Component.literal((String)"Save coordinates"), b -> this.saveCoordinates()).bounds(left, 187, panelWidth, 20).build());
         if (region != null) {
-            this.method_37063(class_4185.method_46430((class_2561)RenderHideScreen.toggleText("Region", region.enabled()), b -> {
+            this.addRenderableWidget(Button.builder((Component)RenderHideScreen.toggleText("Region", region.enabled()), b -> {
                 RegionManager.toggle(region.name());
                 this.rebuild();
-            }).method_46434(left, 214, 188, 20).method_46431());
-            this.method_37063(class_4185.method_46430((class_2561)class_2561.method_43470((String)"Delete region"), b -> {
+            }).bounds(left, 214, 188, 20).build());
+            this.addRenderableWidget(Button.builder((Component)Component.literal((String)"Delete region"), b -> {
                 RegionManager.remove(region.name());
                 this.editingRegion = null;
                 this.rebuild();
-            }).method_46434(left + panelWidth - 188, 214, 188, 20).method_46431());
-            this.method_37063(class_4185.method_46430((class_2561)class_2561.method_43470((String)("Region filters (" + RegionManager.regionFilters(region.name()).size() + ")")), b -> {
+            }).bounds(left + panelWidth - 188, 214, 188, 20).build());
+            this.addRenderableWidget(Button.builder((Component)Component.literal((String)("Region filters (" + RegionManager.regionFilters(region.name()).size() + ")")), b -> {
                 this.editingRegionFilters = true;
                 this.rememberedFilterId = "";
                 this.rebuild();
-            }).method_46434(left, 241, panelWidth, 20).method_46431());
-            this.method_37063(class_4185.method_46430((class_2561)class_2561.method_43470((String)("Region entity filters (" + RegionManager.regionEntityFilters(region.name()).size() + ")")), b -> {
+            }).bounds(left, 241, panelWidth, 20).build());
+            this.addRenderableWidget(Button.builder((Component)Component.literal((String)("Region entity filters (" + RegionManager.regionEntityFilters(region.name()).size() + ")")), b -> {
                 this.editingEntityFilters = true;
                 this.entityFiltersForRegion = true;
                 this.rememberedFilterId = "";
                 this.rebuild();
-            }).method_46434(left, 268, panelWidth, 20).method_46431());
+            }).bounds(left, 268, panelWidth, 20).build());
         } else {
-            this.method_37063(class_4185.method_46430((class_2561)class_2561.method_43470((String)"Clear selection"), b -> {
+            this.addRenderableWidget(Button.builder((Component)Component.literal((String)"Clear selection"), b -> {
                 RegionManager.clearSelection();
                 this.rebuild();
-            }).method_46434(left, 214, panelWidth, 20).method_46431());
+            }).bounds(left, 214, panelWidth, 20).build());
         }
-        this.method_37063(class_4185.method_46430((class_2561)class_2561.method_43470((String)"Back"), b -> {
+        this.addRenderableWidget(Button.builder((Component)Component.literal((String)"Back"), b -> {
             this.editingSelection = false;
             this.editingRegion = null;
             this.rebuild();
-        }).method_46434((this.field_22789 - 120) / 2, region == null ? 251 : 295, 120, 20).method_46431());
+        }).bounds((this.width - 120) / 2, region == null ? 251 : 295, 120, 20).build());
     }
 
     private void initEntityFilterEditor() {
@@ -261,55 +261,55 @@ extends class_437 {
             this.rebuild();
             return;
         }
-        int panelWidth = Math.min(390, this.field_22789 - 20);
-        int left = (this.field_22789 - panelWidth) / 2;
-        this.filterId = new class_342(this.field_22793, left, 68, panelWidth - 64, 20, (class_2561)class_2561.method_43470((String)"Entity ID"));
-        this.filterId.method_1880(128);
-        this.filterId.method_47404((class_2561)class_2561.method_43470((String)"minecraft:minecart"));
-        this.filterId.method_1852(this.rememberedFilterId);
-        this.filterId.method_1863(this::updateFilterSuggestion);
-        this.method_37063(this.filterId);
+        int panelWidth = Math.min(390, this.width - 20);
+        int left = (this.width - panelWidth) / 2;
+        this.filterId = new EditBox(this.font, left, 68, panelWidth - 64, 20, (Component)Component.literal((String)"Entity ID"));
+        this.filterId.setMaxLength(128);
+        this.filterId.setHint((Component)Component.literal((String)"minecraft:minecart"));
+        this.filterId.setValue(this.rememberedFilterId);
+        this.filterId.setResponder(this::updateFilterSuggestion);
+        this.addRenderableWidget(this.filterId);
         this.updateFilterSuggestion(this.rememberedFilterId);
-        this.method_37063(class_4185.method_46430((class_2561)class_2561.method_43470((String)"Add"), b -> this.addFilter()).method_46434(left + panelWidth - 60, 68, 60, 20).method_46431());
-        ArrayList<class_2960> filters = new ArrayList<class_2960>(this.entityFiltersForRegion ? RegionManager.regionEntityFilters(this.editingRegion) : RegionManager.visibleEntityFilters());
-        filters.sort(Comparator.comparing(class_2960::toString));
+        this.addRenderableWidget(Button.builder((Component)Component.literal((String)"Add"), b -> this.addFilter()).bounds(left + panelWidth - 60, 68, 60, 20).build());
+        ArrayList<ResourceLocation> filters = new ArrayList<ResourceLocation>(this.entityFiltersForRegion ? RegionManager.regionEntityFilters(this.editingRegion) : RegionManager.visibleEntityFilters());
+        filters.sort(Comparator.comparing(ResourceLocation::toString));
         this.regionFilterPage = RenderHideScreen.clampPage(this.regionFilterPage, filters.size());
         int start = this.regionFilterPage * 6;
         for (int row = 0; row < 6 && start + row < filters.size(); ++row) {
-            class_2960 id = (class_2960)filters.get(start + row);
+            ResourceLocation id = (ResourceLocation)filters.get(start + row);
             int y = 98 + row * 23;
-            this.method_37063(class_4185.method_46430((class_2561)class_2561.method_43470((String)id.toString()), b -> {}).method_46434(left, y, panelWidth - 27, 20).method_46431());
-            this.method_37063(class_4185.method_46430((class_2561)class_2561.method_43470((String)"\u00d7"), b -> {
+            this.addRenderableWidget(Button.builder((Component)Component.literal((String)id.toString()), b -> {}).bounds(left, y, panelWidth - 27, 20).build());
+            this.addRenderableWidget(Button.builder((Component)Component.literal((String)"\u00d7"), b -> {
                 if (this.entityFiltersForRegion) {
                     RegionManager.removeRegionVisibleEntityFilter(this.editingRegion, id);
                 } else {
                     RegionManager.removeVisibleEntityFilter(id);
                 }
                 this.rebuild();
-            }).method_46434(left + panelWidth - 24, y, 24, 20).method_46431());
+            }).bounds(left + panelWidth - 24, y, 24, 20).build());
         }
-        this.method_37063(class_4185.method_46430((class_2561)class_2561.method_43470((String)"\u2039"), b -> {
+        this.addRenderableWidget(Button.builder((Component)Component.literal((String)"\u2039"), b -> {
             if (this.regionFilterPage > 0) {
                 --this.regionFilterPage;
                 this.rebuild();
             }
-        }).method_46434(left, 239, 28, 20).method_46431());
-        this.method_37063(class_4185.method_46430((class_2561)class_2561.method_43470((String)"Clear entity filters"), b -> {
+        }).bounds(left, 239, 28, 20).build());
+        this.addRenderableWidget(Button.builder((Component)Component.literal((String)"Clear entity filters"), b -> {
             if (this.entityFiltersForRegion) {
                 RegionManager.clearRegionVisibleEntityFilters(this.editingRegion);
             } else {
                 RegionManager.clearVisibleEntityFilters();
             }
             this.rebuild();
-        }).method_46434(left + 32, 239, panelWidth - 64, 20).method_46431());
-        this.method_37063(class_4185.method_46430((class_2561)class_2561.method_43470((String)"\u203a"), b -> {
+        }).bounds(left + 32, 239, panelWidth - 64, 20).build());
+        this.addRenderableWidget(Button.builder((Component)Component.literal((String)"\u203a"), b -> {
             if ((this.regionFilterPage + 1) * 6 < filters.size()) {
                 ++this.regionFilterPage;
                 this.rebuild();
             }
-        }).method_46434(left + panelWidth - 28, 239, 28, 20).method_46431());
+        }).bounds(left + panelWidth - 28, 239, 28, 20).build());
         this.addCopyPasteButtons(left, 266, panelWidth);
-        this.method_37063(class_4185.method_46430((class_2561)class_2561.method_43470((String)(this.entityFiltersForRegion ? "Back to region" : "Back")), b -> {
+        this.addRenderableWidget(Button.builder((Component)Component.literal((String)(this.entityFiltersForRegion ? "Back to region" : "Back")), b -> {
             this.editingEntityFilters = false;
             this.rememberedFilterId = "";
             if (!this.entityFiltersForRegion) {
@@ -317,7 +317,7 @@ extends class_437 {
             }
             this.entityFiltersForRegion = false;
             this.rebuild();
-        }).method_46434((this.field_22789 - 140) / 2, 293, 140, 20).method_46431());
+        }).bounds((this.width - 140) / 2, 293, 140, 20).build());
     }
 
     private void initRegionFilterEditor() {
@@ -329,70 +329,70 @@ extends class_437 {
             this.rebuild();
             return;
         }
-        int panelWidth = Math.min(390, this.field_22789 - 20);
-        int left = (this.field_22789 - panelWidth) / 2;
-        this.filterId = new class_342(this.field_22793, left, 68, panelWidth - 64, 20, (class_2561)class_2561.method_43470((String)"Block ID"));
-        this.filterId.method_1880(128);
-        this.filterId.method_47404((class_2561)class_2561.method_43470((String)"minecraft:stone"));
-        this.filterId.method_1852(this.rememberedFilterId);
-        this.filterId.method_1863(this::updateFilterSuggestion);
-        this.method_37063(this.filterId);
+        int panelWidth = Math.min(390, this.width - 20);
+        int left = (this.width - panelWidth) / 2;
+        this.filterId = new EditBox(this.font, left, 68, panelWidth - 64, 20, (Component)Component.literal((String)"Block ID"));
+        this.filterId.setMaxLength(128);
+        this.filterId.setHint((Component)Component.literal((String)"minecraft:stone"));
+        this.filterId.setValue(this.rememberedFilterId);
+        this.filterId.setResponder(this::updateFilterSuggestion);
+        this.addRenderableWidget(this.filterId);
         this.updateFilterSuggestion(this.rememberedFilterId);
-        this.method_37063(class_4185.method_46430((class_2561)class_2561.method_43470((String)"Add"), b -> this.addFilter()).method_46434(left + panelWidth - 60, 68, 60, 20).method_46431());
-        ArrayList<class_2960> filters = new ArrayList<class_2960>(this.editingRegionFilters ? RegionManager.regionFilters(region.name()) : RegionManager.visibleBlockFilters());
-        filters.sort(Comparator.comparing(class_2960::toString));
+        this.addRenderableWidget(Button.builder((Component)Component.literal((String)"Add"), b -> this.addFilter()).bounds(left + panelWidth - 60, 68, 60, 20).build());
+        ArrayList<ResourceLocation> filters = new ArrayList<ResourceLocation>(this.editingRegionFilters ? RegionManager.regionFilters(region.name()) : RegionManager.visibleBlockFilters());
+        filters.sort(Comparator.comparing(ResourceLocation::toString));
         this.regionFilterPage = RenderHideScreen.clampPage(this.regionFilterPage, filters.size());
         int start = this.regionFilterPage * 6;
         for (int row = 0; row < 6 && start + row < filters.size(); ++row) {
-            class_2960 id = (class_2960)filters.get(start + row);
+            ResourceLocation id = (ResourceLocation)filters.get(start + row);
             int y = 98 + row * 23;
-            this.method_37063(class_4185.method_46430((class_2561)class_2561.method_43470((String)id.toString()), b -> {}).method_46434(left, y, panelWidth - 27, 20).method_46431());
-            this.method_37063(class_4185.method_46430((class_2561)class_2561.method_43470((String)"\u00d7"), b -> {
+            this.addRenderableWidget(Button.builder((Component)Component.literal((String)id.toString()), b -> {}).bounds(left, y, panelWidth - 27, 20).build());
+            this.addRenderableWidget(Button.builder((Component)Component.literal((String)"\u00d7"), b -> {
                 if (this.editingRegionFilters) {
                     RegionManager.removeRegionVisibleBlockFilter(region.name(), id);
                 } else {
                     RegionManager.removeVisibleBlockFilter(id);
                 }
                 this.rebuild();
-            }).method_46434(left + panelWidth - 24, y, 24, 20).method_46431());
+            }).bounds(left + panelWidth - 24, y, 24, 20).build());
         }
-        this.method_37063(class_4185.method_46430((class_2561)class_2561.method_43470((String)"\u2039"), b -> {
+        this.addRenderableWidget(Button.builder((Component)Component.literal((String)"\u2039"), b -> {
             if (this.regionFilterPage > 0) {
                 --this.regionFilterPage;
                 this.rebuild();
             }
-        }).method_46434(left, 239, 28, 20).method_46431());
-        this.method_37063(class_4185.method_46430((class_2561)class_2561.method_43470((String)(this.editingRegionFilters ? "Clear region filters" : "Clear global filters")), b -> {
+        }).bounds(left, 239, 28, 20).build());
+        this.addRenderableWidget(Button.builder((Component)Component.literal((String)(this.editingRegionFilters ? "Clear region filters" : "Clear global filters")), b -> {
             if (this.editingRegionFilters) {
                 RegionManager.clearRegionVisibleBlockFilters(region.name());
             } else {
                 RegionManager.clearVisibleBlockFilters();
             }
             this.rebuild();
-        }).method_46434(left + 32, 239, panelWidth - 64, 20).method_46431());
-        this.method_37063(class_4185.method_46430((class_2561)class_2561.method_43470((String)"\u203a"), b -> {
+        }).bounds(left + 32, 239, panelWidth - 64, 20).build());
+        this.addRenderableWidget(Button.builder((Component)Component.literal((String)"\u203a"), b -> {
             if ((this.regionFilterPage + 1) * 6 < filters.size()) {
                 ++this.regionFilterPage;
                 this.rebuild();
             }
-        }).method_46434(left + panelWidth - 28, 239, 28, 20).method_46431());
+        }).bounds(left + panelWidth - 28, 239, 28, 20).build());
         this.addCopyPasteButtons(left, 266, panelWidth);
-        this.method_37063(class_4185.method_46430((class_2561)class_2561.method_43470((String)(this.editingRegionFilters ? "Back to region" : "Back")), b -> {
+        this.addRenderableWidget(Button.builder((Component)Component.literal((String)(this.editingRegionFilters ? "Back to region" : "Back")), b -> {
             this.editingRegionFilters = false;
             this.editingGlobalBlockFilters = false;
             this.rememberedFilterId = "";
             this.rebuild();
-        }).method_46434((this.field_22789 - 140) / 2, 293, 140, 20).method_46431());
+        }).bounds((this.width - 140) / 2, 293, 140, 20).build());
     }
 
     private void addCopyPasteButtons(int left, int y, int width) {
         int gap = 6;
         int buttonWidth = (width - gap) / 2;
-        this.method_37063(class_4185.method_46430((class_2561)class_2561.method_43470((String)"Copy filters"), b -> this.copyCurrentFilters()).method_46434(left, y, buttonWidth, 20).method_46431());
-        this.method_37063(class_4185.method_46430((class_2561)class_2561.method_43470((String)"Paste filters"), b -> this.pasteCurrentFilters()).method_46434(left + buttonWidth + gap, y, buttonWidth, 20).method_46431());
+        this.addRenderableWidget(Button.builder((Component)Component.literal((String)"Copy filters"), b -> this.copyCurrentFilters()).bounds(left, y, buttonWidth, 20).build());
+        this.addRenderableWidget(Button.builder((Component)Component.literal((String)"Paste filters"), b -> this.pasteCurrentFilters()).bounds(left + buttonWidth + gap, y, buttonWidth, 20).build());
     }
 
-    private Set<class_2960> currentFilters() {
+    private Set<ResourceLocation> currentFilters() {
         if (this.editingEntityFilters) {
             return this.entityFiltersForRegion ? RegionManager.regionEntityFilters(this.editingRegion) : RegionManager.visibleEntityFilters();
         }
@@ -405,14 +405,14 @@ extends class_437 {
     private void copyCurrentFilters() {
         boolean entities = this.editingEntityFilters;
         StringBuilder text = new StringBuilder("# Render Hide ").append(entities ? "entity" : "block").append(" filters\n");
-        this.currentFilters().stream().sorted(Comparator.comparing(class_2960::toString)).forEach(id -> text.append(id).append('\n'));
-        this.field_22787.field_1774.method_1455(text.toString());
+        this.currentFilters().stream().sorted(Comparator.comparing(ResourceLocation::toString)).forEach(id -> text.append(id).append('\n'));
+        this.minecraft.keyboardHandler.setClipboard(text.toString());
         RegionManager.message("Copied " + this.currentFilters().size() + " " + (entities ? "entity" : "block") + " filters.");
     }
 
     private void pasteCurrentFilters() {
         boolean entities = this.editingEntityFilters;
-        String clipboard = this.field_22787.field_1774.method_1460();
+        String clipboard = this.minecraft.keyboardHandler.getClipboard();
         if (clipboard == null || clipboard.isBlank()) {
             RegionManager.message("Clipboard is empty.");
             return;
@@ -422,16 +422,16 @@ extends class_437 {
             RegionManager.message("Clipboard contains the wrong filter type.");
             return;
         }
-        Set<class_2960> before = this.currentFilters();
-        ArrayList<class_2960> valid = new ArrayList<class_2960>();
+        Set<ResourceLocation> before = this.currentFilters();
+        ArrayList<ResourceLocation> valid = new ArrayList<ResourceLocation>();
         int invalid = 0;
         int duplicates = 0;
-        LinkedHashSet<class_2960> seen = new LinkedHashSet<class_2960>();
+        LinkedHashSet<ResourceLocation> seen = new LinkedHashSet<ResourceLocation>();
         for (String token : clipboard.split("[\\s,;]+")) {
             String value = token.trim();
             if (value.isEmpty() || value.startsWith("#") || value.equalsIgnoreCase("Render") || value.equalsIgnoreCase("Hide") || value.equalsIgnoreCase("block") || value.equalsIgnoreCase("entity") || value.equalsIgnoreCase("filters")) continue;
-            class_2960 id = class_2960.method_12829((String)value);
-            boolean exists = id != null && (entities ? class_7923.field_41177.method_10250(id) : class_7923.field_41175.method_10250(id));
+            ResourceLocation id = ResourceLocation.tryParse((String)value);
+            boolean exists = id != null && (entities ? BuiltInRegistries.ENTITY_TYPE.containsKey(id) : BuiltInRegistries.BLOCK.containsKey(id));
             if (!exists) {
                 ++invalid;
                 continue;
@@ -454,10 +454,10 @@ extends class_437 {
         try {
             int[] value = new int[6];
             for (int i = 0; i < 6; ++i) {
-                value[i] = Integer.parseInt(this.coordinates[i].method_1882());
+                value[i] = Integer.parseInt(this.coordinates[i].getValue());
             }
-            class_2338 first = new class_2338(value[0], value[1], value[2]);
-            class_2338 second = new class_2338(value[3], value[4], value[5]);
+            BlockPos first = new BlockPos(value[0], value[1], value[2]);
+            BlockPos second = new BlockPos(value[3], value[4], value[5]);
             if (this.editingSelection) {
                 RegionManager.setPos1(first);
                 RegionManager.setPos2(second);
@@ -473,9 +473,9 @@ extends class_437 {
 
     private void addFilter() {
         boolean added;
-        String value = this.filterId.method_1882().trim();
-        class_2960 id = class_2960.method_12829((String)value);
-        boolean valid = id != null && (this.editingEntityFilters ? class_7923.field_41177.method_10250(id) : class_7923.field_41175.method_10250(id));
+        String value = this.filterId.getValue().trim();
+        ResourceLocation id = ResourceLocation.tryParse((String)value);
+        boolean valid = id != null && (this.editingEntityFilters ? BuiltInRegistries.ENTITY_TYPE.containsKey(id) : BuiltInRegistries.BLOCK.containsKey(id));
         if (!valid) {
             RegionManager.message("Unknown " + (this.editingEntityFilters ? "entity" : "block") + ": " + value);
             return;
@@ -492,19 +492,19 @@ extends class_437 {
     }
 
     private void rebuild() {
-        this.method_37067();
-        this.method_25426();
+        this.clearWidgets();
+        this.init();
     }
 
     private static int clampPage(int page, int size) {
         return Math.max(0, Math.min(page, Math.max(0, (size - 1) / 6)));
     }
 
-    private static class_2561 toggleText(String name, boolean enabled) {
-        return class_2561.method_43470((String)(name + ": " + (enabled ? "ON" : "OFF")));
+    private static Component toggleText(String name, boolean enabled) {
+        return Component.literal((String)(name + ": " + (enabled ? "ON" : "OFF")));
     }
 
-    public void method_25394(class_332 context, int mouseX, int mouseY, float deltaTicks) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
         if (this.editingEntityFilters) {
             this.renderEntityFilterEditor(context, mouseX, mouseY, deltaTicks);
             return;
@@ -517,88 +517,88 @@ extends class_437 {
             this.renderCoordinateEditor(context, mouseX, mouseY, deltaTicks);
             return;
         }
-        int panelWidth = Math.min(470, this.field_22789 - 20);
-        int left = (this.field_22789 - panelWidth) / 2;
+        int panelWidth = Math.min(470, this.width - 20);
+        int left = (this.width - panelWidth) / 2;
         int gap = 8;
         int columnWidth = (panelWidth - gap) / 2;
-        context.method_25294(left - 6, 8, left + panelWidth + 6, 367, -1341124592);
-        context.method_27534(this.field_22793, this.field_22785, this.field_22789 / 2, 12, 0xFFFFFF);
-        context.method_27535(this.field_22793, RenderHideScreen.positionText("Position 1", RegionManager.getPos1()), left, 80, 0xD0D0D0);
-        context.method_27535(this.field_22793, RenderHideScreen.positionText("Position 2", RegionManager.getPos2()), left, 92, 0xD0D0D0);
-        context.method_25303(this.field_22793, "Saved regions", left, 132, 0xFFFFFF);
-        context.method_25300(this.field_22793, this.regionPage + 1 + "/" + Math.max(1, (RegionManager.regions().size() + 6 - 1) / 6), this.field_22789 / 2, 317, 0xA0A0A0);
-        super.method_25394(context, mouseX, mouseY, deltaTicks);
+        context.fill(left - 6, 8, left + panelWidth + 6, 367, -1341124592);
+        context.drawCenteredString(this.font, this.title, this.width / 2, 12, 0xFFFFFF);
+        context.drawString(this.font, RenderHideScreen.positionText("Position 1", RegionManager.getPos1()), left, 80, 0xD0D0D0);
+        context.drawString(this.font, RenderHideScreen.positionText("Position 2", RegionManager.getPos2()), left, 92, 0xD0D0D0);
+        context.drawString(this.font, "Saved regions", left, 132, 0xFFFFFF);
+        context.drawCenteredString(this.font, this.regionPage + 1 + "/" + Math.max(1, (RegionManager.regions().size() + 6 - 1) / 6), this.width / 2, 317, 0xA0A0A0);
+        super.render(context, mouseX, mouseY, deltaTicks);
     }
 
-    private void renderCoordinateEditor(class_332 context, int mouseX, int mouseY, float deltaTicks) {
-        int panelWidth = Math.min(390, this.field_22789 - 20);
-        int left = (this.field_22789 - panelWidth) / 2;
-        context.method_25294(left - 8, 18, left + panelWidth + 8, this.editingRegion == null ? 282 : 327, -1341124592);
+    private void renderCoordinateEditor(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+        int panelWidth = Math.min(390, this.width - 20);
+        int left = (this.width - panelWidth) / 2;
+        context.fill(left - 8, 18, left + panelWidth + 8, this.editingRegion == null ? 282 : 327, -1341124592);
         String heading = this.editingSelection ? "Current selection" : "Region: " + this.editingRegion;
-        context.method_25300(this.field_22793, heading, this.field_22789 / 2, 29, 0xFFFFFF);
-        context.method_25300(this.field_22793, this.editingSelection ? "Edit both corners of the red selection" : "Edit the saved region bounds", this.field_22789 / 2, 47, 0xB0B0B0);
-        context.method_25303(this.field_22793, "Position 1", left, 67, 0xFFFFFF);
-        context.method_25303(this.field_22793, "Position 2", left, 115, 0xFFFFFF);
+        context.drawCenteredString(this.font, heading, this.width / 2, 29, 0xFFFFFF);
+        context.drawCenteredString(this.font, this.editingSelection ? "Edit both corners of the red selection" : "Edit the saved region bounds", this.width / 2, 47, 0xB0B0B0);
+        context.drawString(this.font, "Position 1", left, 67, 0xFFFFFF);
+        context.drawString(this.font, "Position 2", left, 115, 0xFFFFFF);
         String[] labels = new String[]{"X", "Y", "Z", "X", "Y", "Z"};
         for (int i = 0; i < 6; ++i) {
             int x = left + i % 3 * 130;
             int y = i < 3 ? 72 : 120;
-            context.method_25303(this.field_22793, labels[i], x + 2, y, 0xA0A0A0);
+            context.drawString(this.font, labels[i], x + 2, y, 0xA0A0A0);
         }
-        super.method_25394(context, mouseX, mouseY, deltaTicks);
+        super.render(context, mouseX, mouseY, deltaTicks);
     }
 
-    private void renderRegionFilterEditor(class_332 context, int mouseX, int mouseY, float deltaTicks) {
-        int panelWidth = Math.min(390, this.field_22789 - 20);
-        int left = (this.field_22789 - panelWidth) / 2;
+    private void renderRegionFilterEditor(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+        int panelWidth = Math.min(390, this.width - 20);
+        int left = (this.width - panelWidth) / 2;
         int count = this.editingRegionFilters ? RegionManager.regionFilters(this.editingRegion).size() : RegionManager.visibleBlockFilters().size();
-        context.method_25294(left - 8, 18, left + panelWidth + 8, 324, -1341124592);
-        context.method_25300(this.field_22793, (String)(this.editingRegionFilters ? "Region block filters: " + this.editingRegion : "Global block filters"), this.field_22789 / 2, 29, 0xFFFFFF);
-        context.method_25300(this.field_22793, this.editingRegionFilters ? "Added to global filters \u2022 Tab to complete" : "Visible exceptions \u2022 Tab to complete", this.field_22789 / 2, 47, 0xB0B0B0);
-        context.method_25300(this.field_22793, this.regionFilterPage + 1 + "/" + Math.max(1, (count + 6 - 1) / 6), this.field_22789 / 2, 245, 0xA0A0A0);
-        super.method_25394(context, mouseX, mouseY, deltaTicks);
+        context.fill(left - 8, 18, left + panelWidth + 8, 324, -1341124592);
+        context.drawCenteredString(this.font, (String)(this.editingRegionFilters ? "Region block filters: " + this.editingRegion : "Global block filters"), this.width / 2, 29, 0xFFFFFF);
+        context.drawCenteredString(this.font, this.editingRegionFilters ? "Added to global filters \u2022 Tab to complete" : "Visible exceptions \u2022 Tab to complete", this.width / 2, 47, 0xB0B0B0);
+        context.drawCenteredString(this.font, this.regionFilterPage + 1 + "/" + Math.max(1, (count + 6 - 1) / 6), this.width / 2, 245, 0xA0A0A0);
+        super.render(context, mouseX, mouseY, deltaTicks);
     }
 
-    private void renderEntityFilterEditor(class_332 context, int mouseX, int mouseY, float deltaTicks) {
-        int panelWidth = Math.min(390, this.field_22789 - 20);
-        int left = (this.field_22789 - panelWidth) / 2;
+    private void renderEntityFilterEditor(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+        int panelWidth = Math.min(390, this.width - 20);
+        int left = (this.width - panelWidth) / 2;
         int count = this.entityFiltersForRegion ? RegionManager.regionEntityFilters(this.editingRegion).size() : RegionManager.visibleEntityFilters().size();
-        context.method_25294(left - 8, 18, left + panelWidth + 8, 324, -1341124592);
+        context.fill(left - 8, 18, left + panelWidth + 8, 324, -1341124592);
         String heading = this.entityFiltersForRegion ? "Region entity filters: " + this.editingRegion : "Global entity filters";
-        context.method_25300(this.field_22793, heading, this.field_22789 / 2, 29, 0xFFFFFF);
-        context.method_25300(this.field_22793, "Visible exceptions \u2022 Tab to complete", this.field_22789 / 2, 47, 0xB0B0B0);
-        context.method_25300(this.field_22793, this.regionFilterPage + 1 + "/" + Math.max(1, (count + 6 - 1) / 6), this.field_22789 / 2, 245, 0xA0A0A0);
-        super.method_25394(context, mouseX, mouseY, deltaTicks);
+        context.drawCenteredString(this.font, heading, this.width / 2, 29, 0xFFFFFF);
+        context.drawCenteredString(this.font, "Visible exceptions \u2022 Tab to complete", this.width / 2, 47, 0xB0B0B0);
+        context.drawCenteredString(this.font, this.regionFilterPage + 1 + "/" + Math.max(1, (count + 6 - 1) / 6), this.width / 2, 245, 0xA0A0A0);
+        super.render(context, mouseX, mouseY, deltaTicks);
     }
 
-    private class_2561 selectionText() {
-        class_2338 a = RegionManager.getPos1();
-        class_2338 b = RegionManager.getPos2();
-        return class_2561.method_43470((String)("Selection: " + (a == null ? "pos1 unset" : RenderHideScreen.shortPos(a)) + " / " + (b == null ? "pos2 unset" : RenderHideScreen.shortPos(b))));
+    private Component selectionText() {
+        BlockPos a = RegionManager.getPos1();
+        BlockPos b = RegionManager.getPos2();
+        return Component.literal((String)("Selection: " + (a == null ? "pos1 unset" : RenderHideScreen.shortPos(a)) + " / " + (b == null ? "pos2 unset" : RenderHideScreen.shortPos(b))));
     }
 
-    private static class_2561 positionText(String label, class_2338 pos) {
-        return class_2561.method_43470((String)(label + ": " + (pos == null ? "unset" : RenderHideScreen.shortPos(pos))));
+    private static Component positionText(String label, BlockPos pos) {
+        return Component.literal((String)(label + ": " + (pos == null ? "unset" : RenderHideScreen.shortPos(pos))));
     }
 
-    private static String shortPos(class_2338 pos) {
-        return pos.method_10263() + "," + pos.method_10264() + "," + pos.method_10260();
+    private static String shortPos(BlockPos pos) {
+        return pos.getX() + "," + pos.getY() + "," + pos.getZ();
     }
 
     @Environment(value=EnvType.CLIENT)
     private static final class OpacitySlider
-    extends class_357 {
+    extends AbstractSliderButton {
         private OpacitySlider(int x, int y, int width, int height) {
-            super(x, y, width, height, (class_2561)class_2561.method_43473(), (double)RegionManager.hiddenBlockOpacity());
-            this.method_25346();
+            super(x, y, width, height, (Component)Component.empty(), (double)RegionManager.hiddenBlockOpacity());
+            this.updateMessage();
         }
 
-        protected void method_25346() {
-            this.method_25355((class_2561)class_2561.method_43470((String)("Hidden block opacity: " + Math.round(this.field_22753 * 100.0) + "%")));
+        protected void updateMessage() {
+            this.setMessage((Component)Component.literal((String)("Hidden block opacity: " + Math.round(this.value * 100.0) + "%")));
         }
 
-        protected void method_25344() {
-            RegionManager.setHiddenBlockOpacity(this.field_22753);
+        protected void applyValue() {
+            RegionManager.setHiddenBlockOpacity(this.value);
         }
     }
 }

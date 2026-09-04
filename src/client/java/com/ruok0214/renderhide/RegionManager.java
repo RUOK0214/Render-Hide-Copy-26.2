@@ -8,24 +8,24 @@
  *  net.fabricmc.api.EnvType
  *  net.fabricmc.api.Environment
  *  net.fabricmc.loader.api.FabricLoader
- *  net.minecraft.class_1297
- *  net.minecraft.class_1944
- *  net.minecraft.class_2246
- *  net.minecraft.class_2338
- *  net.minecraft.class_2338$class_2339
- *  net.minecraft.class_2350
- *  net.minecraft.class_2374
- *  net.minecraft.class_2561
- *  net.minecraft.class_2586
- *  net.minecraft.class_2669
- *  net.minecraft.class_2671
- *  net.minecraft.class_2680
- *  net.minecraft.class_2764
- *  net.minecraft.class_2769
- *  net.minecraft.class_2960
- *  net.minecraft.class_310
- *  net.minecraft.class_4076
- *  net.minecraft.class_7923
+ *  net.minecraft.Entity
+ *  net.minecraft.LightLayer
+ *  net.minecraft.Blocks
+ *  net.minecraft.BlockPos
+ *  net.minecraft.BlockPos$MutableBlockPos
+ *  net.minecraft.Direction
+ *  net.minecraft.Position
+ *  net.minecraft.Component
+ *  net.minecraft.BlockEntity
+ *  net.minecraft.PistonMovingBlockEntity
+ *  net.minecraft.PistonHeadBlock
+ *  net.minecraft.BlockState
+ *  net.minecraft.PistonType
+ *  net.minecraft.Property
+ *  net.minecraft.ResourceLocation
+ *  net.minecraft.Minecraft
+ *  net.minecraft.SectionPos
+ *  net.minecraft.BuiltInRegistries
  */
 package com.ruok0214.renderhide;
 
@@ -54,23 +54,23 @@ import java.util.Set;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.class_1297;
-import net.minecraft.class_1944;
-import net.minecraft.class_2246;
-import net.minecraft.class_2338;
-import net.minecraft.class_2350;
-import net.minecraft.class_2374;
-import net.minecraft.class_2561;
-import net.minecraft.class_2586;
-import net.minecraft.class_2669;
-import net.minecraft.class_2671;
-import net.minecraft.class_2680;
-import net.minecraft.class_2764;
-import net.minecraft.class_2769;
-import net.minecraft.class_2960;
-import net.minecraft.class_310;
-import net.minecraft.class_4076;
-import net.minecraft.class_7923;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.Position;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.piston.PistonMovingBlockEntity;
+import net.minecraft.world.level.block.piston.PistonHeadBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.PistonType;
+import net.minecraft.world.level.block.state.properties.Property;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.SectionPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 @Environment(value=EnvType.CLIENT)
 public final class RegionManager {
@@ -87,12 +87,12 @@ public final class RegionManager {
     private static volatile boolean globallyEnabled = true;
     private static volatile boolean virtualLightEnabled = true;
     private static volatile float hiddenBlockOpacity = 0.0f;
-    private static volatile Set<class_2960> visibleBlockFilters = Set.of();
-    private static volatile Map<String, Set<class_2960>> regionVisibleBlockFilters = Map.of();
-    private static volatile Set<class_2960> visibleEntityFilters = Set.of();
-    private static volatile Map<String, Set<class_2960>> regionVisibleEntityFilters = Map.of();
-    private static class_2338 pos1;
-    private static class_2338 pos2;
+    private static volatile Set<ResourceLocation> visibleBlockFilters = Set.of();
+    private static volatile Map<String, Set<ResourceLocation>> regionVisibleBlockFilters = Map.of();
+    private static volatile Set<ResourceLocation> visibleEntityFilters = Set.of();
+    private static volatile Map<String, Set<ResourceLocation>> regionVisibleEntityFilters = Map.of();
+    private static BlockPos pos1;
+    private static BlockPos pos2;
 
     private RegionManager() {
     }
@@ -122,13 +122,13 @@ public final class RegionManager {
                 reader = Files.newBufferedReader(FILTER_CONFIG);
                 try {
                     loaded = (List)GSON.fromJson((Reader)reader, new TypeToken<List<String>>(){}.getType());
-                    LinkedHashSet<class_2960> filters = new LinkedHashSet<class_2960>();
+                    LinkedHashSet<ResourceLocation> filters = new LinkedHashSet<ResourceLocation>();
                     if (loaded != null) {
                         Iterator iterator = loaded.iterator();
                         while (iterator.hasNext()) {
                             String value = (String)iterator.next();
-                            class_2960 id = class_2960.method_12829((String)value);
-                            if (id == null || !class_7923.field_41175.method_10250(id)) continue;
+                            ResourceLocation id = ResourceLocation.tryParse((String)value);
+                            if (id == null || !BuiltInRegistries.BLOCK.containsKey(id)) continue;
                             filters.add(id);
                         }
                     }
@@ -153,11 +153,11 @@ public final class RegionManager {
                     LinkedHashMap result = new LinkedHashMap();
                     if (loaded2 != null) {
                         loaded2.forEach((name, values) -> {
-                            LinkedHashSet<class_2960> filters = new LinkedHashSet<class_2960>();
+                            LinkedHashSet<ResourceLocation> filters = new LinkedHashSet<ResourceLocation>();
                             if (values != null) {
                                 for (String value : values) {
-                                    class_2960 id = class_2960.method_12829((String)value);
-                                    if (id == null || !class_7923.field_41175.method_10250(id)) continue;
+                                    ResourceLocation id = ResourceLocation.tryParse((String)value);
+                                    if (id == null || !BuiltInRegistries.BLOCK.containsKey(id)) continue;
                                     filters.add(id);
                                 }
                             }
@@ -201,11 +201,11 @@ public final class RegionManager {
         }
     }
 
-    public static void updateDimension(class_310 client) {
-        activeDimension = client.field_1687 == null ? "" : client.field_1687.method_27983().method_29177().toString();
+    public static void updateDimension(Minecraft client) {
+        activeDimension = client.level == null ? "" : client.level.dimension().identifier().toString();
     }
 
-    public static boolean isHidden(class_2338 pos, class_2680 state) {
+    public static boolean isHidden(BlockPos pos, BlockState state) {
         if (!globallyEnabled) {
             return false;
         }
@@ -221,15 +221,15 @@ public final class RegionManager {
         return inside;
     }
 
-    public static boolean shouldImproveVisibleBlockLighting(class_2338 pos) {
+    public static boolean shouldImproveVisibleBlockLighting(BlockPos pos) {
         if (!globallyEnabled) {
             return false;
         }
-        class_310 client = class_310.method_1551();
-        if (client.field_1687 == null) {
+        Minecraft client = Minecraft.getInstance();
+        if (client.level == null) {
             return false;
         }
-        class_2680 state = client.field_1687.method_8320(pos);
+        BlockState state = client.level.getBlockState(pos);
         String dimension = activeDimension;
         for (HiddenRegion region : snapshot) {
             if (!region.contains(pos, dimension) || !RegionManager.isVisibleFilterState(state, visibleBlockFilters) && !RegionManager.isVisibleFilterState(state, RegionManager.regionFilters(region.name()))) continue;
@@ -238,7 +238,7 @@ public final class RegionManager {
         return false;
     }
 
-    public static boolean isInsideActiveRegion(class_2338 pos) {
+    public static boolean isInsideActiveRegion(BlockPos pos) {
         if (!globallyEnabled) {
             return false;
         }
@@ -250,31 +250,31 @@ public final class RegionManager {
         return false;
     }
 
-    public static boolean isVirtualLightAffected(class_2338 origin) {
+    public static boolean isVirtualLightAffected(BlockPos origin) {
         if (!virtualLightEnabled || !globallyEnabled) {
             return false;
         }
-        class_310 client = class_310.method_1551();
-        if (client.field_1687 == null) {
+        Minecraft client = Minecraft.getInstance();
+        if (client.level == null) {
             return false;
         }
         if (RegionManager.isInsideActiveRegion(origin)) {
             return true;
         }
-        for (class_2350 direction : class_2350.values()) {
-            class_2338 neighbor = origin.method_10093(direction);
-            if (!RegionManager.isHidden(neighbor, client.field_1687.method_8320(neighbor))) continue;
+        for (Direction direction : Direction.values()) {
+            BlockPos neighbor = origin.relative(direction);
+            if (!RegionManager.isHidden(neighbor, client.level.getBlockState(neighbor))) continue;
             return true;
         }
         return false;
     }
 
-    public static boolean isVirtualLightAffected(class_2338 origin, class_2350 face) {
+    public static boolean isVirtualLightAffected(BlockPos origin, Direction face) {
         if (!virtualLightEnabled || !globallyEnabled) {
             return false;
         }
-        class_310 client = class_310.method_1551();
-        if (client.field_1687 == null) {
+        Minecraft client = Minecraft.getInstance();
+        if (client.level == null) {
             return false;
         }
         if (RegionManager.isInsideActiveRegion(origin)) {
@@ -283,75 +283,75 @@ public final class RegionManager {
         if (face == null) {
             return RegionManager.isVirtualLightAffected(origin);
         }
-        class_2338 neighbor = origin.method_10093(face);
-        return RegionManager.isHidden(neighbor, client.field_1687.method_8320(neighbor));
+        BlockPos neighbor = origin.relative(face);
+        return RegionManager.isHidden(neighbor, client.level.getBlockState(neighbor));
     }
 
-    public static int virtualLightLevel(class_1944 type, class_2338 origin, int original) {
+    public static int virtualLightLevel(LightLayer type, BlockPos origin, int original) {
         if (!RegionManager.isVirtualLightAffected(origin)) {
             return original;
         }
         return RegionManager.calculateVirtualLightLevel(type, origin, null, original);
     }
 
-    public static int virtualLightLevel(class_1944 type, class_2338 origin, class_2350 face, int original) {
+    public static int virtualLightLevel(LightLayer type, BlockPos origin, Direction face, int original) {
         if (!RegionManager.isVirtualLightAffected(origin, face)) {
             return original;
         }
         return RegionManager.calculateVirtualLightLevel(type, origin, face, original);
     }
 
-    private static int calculateVirtualLightLevel(class_1944 type, class_2338 origin, class_2350 face, int original) {
-        class_2680 entryState;
-        class_2338 entry;
-        class_310 client = class_310.method_1551();
-        if (client.field_1687 == null) {
+    private static int calculateVirtualLightLevel(LightLayer type, BlockPos origin, Direction face, int original) {
+        BlockState entryState;
+        BlockPos entry;
+        Minecraft client = Minecraft.getInstance();
+        if (client.level == null) {
             return original;
         }
         int best = original;
-        if (type == class_1944.field_9284 && face != null && RegionManager.isHidden(entry = origin.method_10093(face), entryState = client.field_1687.method_8320(entry))) {
-            class_2338.class_2339 skyCursor = entry.method_25503();
+        if (type == LightLayer.SKY && face != null && RegionManager.isHidden(entry = origin.relative(face), entryState = client.level.getBlockState(entry))) {
+            BlockPos.MutableBlockPos skyCursor = entry.mutable();
             for (int distance = 0; distance <= 512; ++distance) {
-                class_2680 state = client.field_1687.method_8320((class_2338)skyCursor);
-                if (!RegionManager.isInsideActiveRegion((class_2338)skyCursor)) {
-                    if (!state.method_26215() && state.method_26216() && state.method_26193() > 0) break;
-                    int boundary = client.field_1687.method_8314(class_1944.field_9284, (class_2338)skyCursor);
-                    int turnDecay = face == class_2350.field_11036 ? 0 : 1;
+                BlockState state = client.level.getBlockState((BlockPos)skyCursor);
+                if (!RegionManager.isInsideActiveRegion((BlockPos)skyCursor)) {
+                    if (!state.isAir() && state.isSolidRender() && state.getLightBlock() > 0) break;
+                    int boundary = client.level.getBrightness(LightLayer.SKY, (BlockPos)skyCursor);
+                    int turnDecay = face == Direction.UP ? 0 : 1;
                     best = Math.max(best, boundary - turnDecay);
                     break;
                 }
-                if (RegionManager.isVisibleAt((class_2338)skyCursor, state) && !state.method_26215()) break;
-                skyCursor.method_10098(class_2350.field_11036);
+                if (RegionManager.isVisibleAt((BlockPos)skyCursor, state) && !state.isAir()) break;
+                skyCursor.move(Direction.UP);
             }
         }
-        block1: for (class_2350 direction : class_2350.values()) {
-            class_2338.class_2339 cursor = origin.method_25503();
-            int searchDistance = type == class_1944.field_9284 && direction == class_2350.field_11036 ? 512 : 15;
+        block1: for (Direction direction : Direction.values()) {
+            BlockPos.MutableBlockPos cursor = origin.mutable();
+            int searchDistance = type == LightLayer.SKY && direction == Direction.UP ? 512 : 15;
             for (int distance = 1; distance <= searchDistance; ++distance) {
-                cursor.method_10098(direction);
-                class_2680 state = client.field_1687.method_8320((class_2338)cursor);
-                boolean inRegion = RegionManager.isInsideActiveRegion((class_2338)cursor);
-                boolean filterVisible = RegionManager.isVisibleAt((class_2338)cursor, state);
-                if (type == class_1944.field_9282) {
-                    best = Math.max(best, state.method_26213() - distance + 1);
+                cursor.move(direction);
+                BlockState state = client.level.getBlockState((BlockPos)cursor);
+                boolean inRegion = RegionManager.isInsideActiveRegion((BlockPos)cursor);
+                boolean filterVisible = RegionManager.isVisibleAt((BlockPos)cursor, state);
+                if (type == LightLayer.BLOCK) {
+                    best = Math.max(best, state.getLightEmission() - distance + 1);
                 }
                 if (!inRegion) {
-                    int boundary = client.field_1687.method_8314(type, (class_2338)cursor);
-                    int decay = type == class_1944.field_9284 && direction == class_2350.field_11036 ? 0 : distance - 1;
+                    int boundary = client.level.getBrightness(type, (BlockPos)cursor);
+                    int decay = type == LightLayer.SKY && direction == Direction.UP ? 0 : distance - 1;
                     best = Math.max(best, boundary - decay);
                     continue block1;
                 }
-                if (filterVisible && !state.method_26215()) continue block1;
+                if (filterVisible && !state.isAir()) continue block1;
             }
         }
         return Math.max(0, Math.min(15, best));
     }
 
-    public static class_2338 getPos1() {
+    public static BlockPos getPos1() {
         return pos1;
     }
 
-    public static class_2338 getPos2() {
+    public static BlockPos getPos2() {
         return pos2;
     }
 
@@ -371,39 +371,39 @@ public final class RegionManager {
         return hiddenBlockOpacity;
     }
 
-    public static boolean isGhostRendered(class_2338 pos, class_2680 state) {
+    public static boolean isGhostRendered(BlockPos pos, BlockState state) {
         return hiddenBlockOpacity > 0.0f && RegionManager.isHidden(pos, state);
     }
 
-    public static boolean isFullyHidden(class_2338 pos, class_2680 state) {
+    public static boolean isFullyHidden(BlockPos pos, BlockState state) {
         return hiddenBlockOpacity <= 0.0f && RegionManager.isHidden(pos, state);
     }
 
-    public static Set<class_2960> visibleBlockFilters() {
+    public static Set<ResourceLocation> visibleBlockFilters() {
         return visibleBlockFilters;
     }
 
-    public static Set<class_2960> regionFilters(String regionName) {
+    public static Set<ResourceLocation> regionFilters(String regionName) {
         return regionVisibleBlockFilters.getOrDefault(regionName.toLowerCase(Locale.ROOT), Set.of());
     }
 
-    public static Set<class_2960> visibleEntityFilters() {
+    public static Set<ResourceLocation> visibleEntityFilters() {
         return visibleEntityFilters;
     }
 
-    public static Set<class_2960> regionEntityFilters(String regionName) {
+    public static Set<ResourceLocation> regionEntityFilters(String regionName) {
         return regionVisibleEntityFilters.getOrDefault(regionName.toLowerCase(Locale.ROOT), Set.of());
     }
 
-    public static boolean isEntityHidden(class_1297 entity) {
+    public static boolean isEntityHidden(Entity entity) {
         if (!globallyEnabled) {
             return false;
         }
-        class_2960 id = class_7923.field_41177.method_10221((Object)entity.method_5864());
+        ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey((Object)entity.getType());
         if (visibleEntityFilters.contains(id)) {
             return false;
         }
-        class_2338 pos = class_2338.method_49638((class_2374)entity.method_5829().method_1005());
+        BlockPos pos = BlockPos.containing((Position)entity.getBoundingBox().getCenter());
         boolean inside = false;
         for (HiddenRegion region : snapshot) {
             if (!region.contains(pos, activeDimension)) continue;
@@ -414,11 +414,11 @@ public final class RegionManager {
         return inside;
     }
 
-    public static boolean addVisibleEntityFilter(class_2960 id) {
-        if (!class_7923.field_41177.method_10250(id)) {
+    public static boolean addVisibleEntityFilter(ResourceLocation id) {
+        if (!BuiltInRegistries.ENTITY_TYPE.containsKey(id)) {
             return false;
         }
-        LinkedHashSet<class_2960> filters = new LinkedHashSet<class_2960>(visibleEntityFilters);
+        LinkedHashSet<ResourceLocation> filters = new LinkedHashSet<ResourceLocation>(visibleEntityFilters);
         if (!filters.add(id)) {
             return false;
         }
@@ -428,8 +428,8 @@ public final class RegionManager {
         return true;
     }
 
-    public static boolean removeVisibleEntityFilter(class_2960 id) {
-        LinkedHashSet<class_2960> filters = new LinkedHashSet<class_2960>(visibleEntityFilters);
+    public static boolean removeVisibleEntityFilter(ResourceLocation id) {
+        LinkedHashSet<ResourceLocation> filters = new LinkedHashSet<ResourceLocation>(visibleEntityFilters);
         if (!filters.remove(id)) {
             return false;
         }
@@ -446,16 +446,16 @@ public final class RegionManager {
         RegionManager.message("Visible entity filters cleared (" + count + ").");
     }
 
-    public static int addVisibleFiltersBatch(List<class_2960> ids, boolean entities, String regionName) {
+    public static int addVisibleFiltersBatch(List<ResourceLocation> ids, boolean entities, String regionName) {
         boolean regional;
         boolean bl = regional = regionName != null;
         if (regional && RegionManager.find(regionName) == null) {
             return 0;
         }
-        Set<class_2960> current = entities ? (regional ? RegionManager.regionEntityFilters(regionName) : visibleEntityFilters) : (regional ? RegionManager.regionFilters(regionName) : visibleBlockFilters);
-        LinkedHashSet<class_2960> merged = new LinkedHashSet<class_2960>(current);
-        for (class_2960 id : ids) {
-            boolean valid = entities ? class_7923.field_41177.method_10250(id) : class_7923.field_41175.method_10250(id);
+        Set<ResourceLocation> current = entities ? (regional ? RegionManager.regionEntityFilters(regionName) : visibleEntityFilters) : (regional ? RegionManager.regionFilters(regionName) : visibleBlockFilters);
+        LinkedHashSet<ResourceLocation> merged = new LinkedHashSet<ResourceLocation>(current);
+        for (ResourceLocation id : ids) {
+            boolean valid = entities ? BuiltInRegistries.ENTITY_TYPE.containsKey(id) : BuiltInRegistries.BLOCK.containsKey(id);
             if (!valid) continue;
             merged.add(id);
         }
@@ -463,9 +463,9 @@ public final class RegionManager {
         if (added == 0) {
             return 0;
         }
-        Set<class_2960> result = Set.copyOf(merged);
+        Set<ResourceLocation> result = Set.copyOf(merged);
         if (entities && regional) {
-            LinkedHashMap<String, Set<class_2960>> all = new LinkedHashMap<String, Set<class_2960>>(regionVisibleEntityFilters);
+            LinkedHashMap<String, Set<ResourceLocation>> all = new LinkedHashMap<String, Set<ResourceLocation>>(regionVisibleEntityFilters);
             all.put(regionName.toLowerCase(Locale.ROOT), result);
             regionVisibleEntityFilters = Map.copyOf(all);
             RegionManager.saveRegionIdMap(REGION_ENTITY_FILTER_CONFIG, regionVisibleEntityFilters, "region entity filters");
@@ -473,7 +473,7 @@ public final class RegionManager {
             visibleEntityFilters = result;
             RegionManager.saveIdList(ENTITY_FILTER_CONFIG, visibleEntityFilters, "entity filters");
         } else if (regional) {
-            LinkedHashMap<String, Set<class_2960>> all = new LinkedHashMap<String, Set<class_2960>>(regionVisibleBlockFilters);
+            LinkedHashMap<String, Set<ResourceLocation>> all = new LinkedHashMap<String, Set<ResourceLocation>>(regionVisibleBlockFilters);
             all.put(regionName.toLowerCase(Locale.ROOT), result);
             regionVisibleBlockFilters = Map.copyOf(all);
             RegionManager.saveRegionFilters();
@@ -486,16 +486,16 @@ public final class RegionManager {
         return added;
     }
 
-    public static boolean addRegionVisibleEntityFilter(String regionName, class_2960 id) {
-        if (RegionManager.find(regionName) == null || !class_7923.field_41177.method_10250(id)) {
+    public static boolean addRegionVisibleEntityFilter(String regionName, ResourceLocation id) {
+        if (RegionManager.find(regionName) == null || !BuiltInRegistries.ENTITY_TYPE.containsKey(id)) {
             return false;
         }
         String key = regionName.toLowerCase(Locale.ROOT);
-        LinkedHashSet<class_2960> filters = new LinkedHashSet<class_2960>(RegionManager.regionEntityFilters(key));
+        LinkedHashSet<ResourceLocation> filters = new LinkedHashSet<ResourceLocation>(RegionManager.regionEntityFilters(key));
         if (!filters.add(id)) {
             return false;
         }
-        LinkedHashMap<String, Set<class_2960>> all = new LinkedHashMap<String, Set<class_2960>>(regionVisibleEntityFilters);
+        LinkedHashMap<String, Set<ResourceLocation>> all = new LinkedHashMap<String, Set<ResourceLocation>>(regionVisibleEntityFilters);
         all.put(key, Set.copyOf(filters));
         regionVisibleEntityFilters = Map.copyOf(all);
         RegionManager.saveRegionIdMap(REGION_ENTITY_FILTER_CONFIG, regionVisibleEntityFilters, "region entity filters");
@@ -503,13 +503,13 @@ public final class RegionManager {
         return true;
     }
 
-    public static boolean removeRegionVisibleEntityFilter(String regionName, class_2960 id) {
+    public static boolean removeRegionVisibleEntityFilter(String regionName, ResourceLocation id) {
         String key = regionName.toLowerCase(Locale.ROOT);
-        LinkedHashSet<class_2960> filters = new LinkedHashSet<class_2960>(RegionManager.regionEntityFilters(key));
+        LinkedHashSet<ResourceLocation> filters = new LinkedHashSet<ResourceLocation>(RegionManager.regionEntityFilters(key));
         if (!filters.remove(id)) {
             return false;
         }
-        LinkedHashMap<String, Set<class_2960>> all = new LinkedHashMap<String, Set<class_2960>>(regionVisibleEntityFilters);
+        LinkedHashMap<String, Set<ResourceLocation>> all = new LinkedHashMap<String, Set<ResourceLocation>>(regionVisibleEntityFilters);
         if (filters.isEmpty()) {
             all.remove(key);
         } else {
@@ -524,19 +524,19 @@ public final class RegionManager {
     public static void clearRegionVisibleEntityFilters(String regionName) {
         String key = regionName.toLowerCase(Locale.ROOT);
         int count = RegionManager.regionEntityFilters(key).size();
-        LinkedHashMap<String, Set<class_2960>> all = new LinkedHashMap<String, Set<class_2960>>(regionVisibleEntityFilters);
+        LinkedHashMap<String, Set<ResourceLocation>> all = new LinkedHashMap<String, Set<ResourceLocation>>(regionVisibleEntityFilters);
         all.remove(key);
         regionVisibleEntityFilters = Map.copyOf(all);
         RegionManager.saveRegionIdMap(REGION_ENTITY_FILTER_CONFIG, regionVisibleEntityFilters, "region entity filters");
         RegionManager.message("Region entity filters cleared for " + regionName + " (" + count + ").");
     }
 
-    public static boolean shouldRenderMovingPistonBlock(class_2338 pos, class_2680 pushedState) {
+    public static boolean shouldRenderMovingPistonBlock(BlockPos pos, BlockState pushedState) {
         return !RegionManager.isInsideActiveRegion(pos) || RegionManager.isVisibleAt(pos, pushedState);
     }
 
-    private static boolean isVisibleAt(class_2338 pos, class_2680 state) {
-        if (state.method_27852(class_2246.field_10008) && RegionManager.isMovingPushedBlockVisible(pos)) {
+    private static boolean isVisibleAt(BlockPos pos, BlockState state) {
+        if (state.is(Blocks.MOVING_PISTON) && RegionManager.isMovingPushedBlockVisible(pos)) {
             return true;
         }
         if (RegionManager.isVisibleFilterState(state, visibleBlockFilters)) {
@@ -550,17 +550,17 @@ public final class RegionManager {
         return false;
     }
 
-    private static boolean isMovingPushedBlockVisible(class_2338 pos) {
-        class_310 client = class_310.method_1551();
-        if (client.field_1687 == null) {
+    private static boolean isMovingPushedBlockVisible(BlockPos pos) {
+        Minecraft client = Minecraft.getInstance();
+        if (client.level == null) {
             return false;
         }
-        class_2586 blockEntity = client.field_1687.method_8321(pos);
-        if (!(blockEntity instanceof class_2669)) {
+        BlockEntity blockEntity = client.level.getBlockEntity(pos);
+        if (!(blockEntity instanceof PistonMovingBlockEntity)) {
             return false;
         }
-        class_2669 piston = (class_2669)blockEntity;
-        class_2680 pushed = piston.method_11495();
+        PistonMovingBlockEntity piston = (PistonMovingBlockEntity)blockEntity;
+        BlockState pushed = piston.getMovedState();
         if (RegionManager.isVisibleFilterState(pushed, visibleBlockFilters)) {
             return true;
         }
@@ -572,27 +572,27 @@ public final class RegionManager {
         return false;
     }
 
-    private static boolean isVisibleFilterState(class_2680 state, Set<class_2960> filters) {
-        class_2960 stateId = class_7923.field_41175.method_10221((Object)state.method_26204());
+    private static boolean isVisibleFilterState(BlockState state, Set<ResourceLocation> filters) {
+        ResourceLocation stateId = BuiltInRegistries.BLOCK.getKey((Object)state.getBlock());
         if (filters.contains(stateId)) {
             return true;
         }
-        if (state.method_27852(class_2246.field_10379)) {
-            class_2764 type = (class_2764)state.method_11654((class_2769)class_2671.field_12224);
-            return type == class_2764.field_12634 ? filters.contains(class_7923.field_41175.method_10221((Object)class_2246.field_10615)) : filters.contains(class_7923.field_41175.method_10221((Object)class_2246.field_10560));
+        if (state.is(Blocks.PISTON_HEAD)) {
+            PistonType type = (PistonType)state.getValue((Property)PistonHeadBlock.TYPE);
+            return type == PistonType.STICKY ? filters.contains(BuiltInRegistries.BLOCK.getKey((Object)Blocks.STICKY_PISTON)) : filters.contains(BuiltInRegistries.BLOCK.getKey((Object)Blocks.PISTON));
         }
-        if (state.method_27852(class_2246.field_10008)) {
-            return filters.contains(class_7923.field_41175.method_10221((Object)class_2246.field_10560)) || filters.contains(class_7923.field_41175.method_10221((Object)class_2246.field_10615));
+        if (state.is(Blocks.MOVING_PISTON)) {
+            return filters.contains(BuiltInRegistries.BLOCK.getKey((Object)Blocks.PISTON)) || filters.contains(BuiltInRegistries.BLOCK.getKey((Object)Blocks.STICKY_PISTON));
         }
-        if (!stateId.method_12836().equals("minecraft")) {
+        if (!stateId.getNamespace().equals("minecraft")) {
             return false;
         }
-        String family = RegionManager.linkedFilterFamily(stateId.method_12832());
+        String family = RegionManager.linkedFilterFamily(stateId.getPath());
         if (family == null) {
             return false;
         }
-        for (class_2960 filter : filters) {
-            if (!filter.method_12836().equals("minecraft") || !family.equals(RegionManager.linkedFilterFamily(filter.method_12832()))) continue;
+        for (ResourceLocation filter : filters) {
+            if (!filter.getNamespace().equals("minecraft") || !family.equals(RegionManager.linkedFilterFamily(filter.getPath()))) continue;
             return true;
         }
         return false;
@@ -662,11 +662,11 @@ public final class RegionManager {
         return null;
     }
 
-    public static boolean addVisibleBlockFilter(class_2960 id) {
-        if (!class_7923.field_41175.method_10250(id)) {
+    public static boolean addVisibleBlockFilter(ResourceLocation id) {
+        if (!BuiltInRegistries.BLOCK.containsKey(id)) {
             return false;
         }
-        LinkedHashSet<class_2960> filters = new LinkedHashSet<class_2960>(visibleBlockFilters);
+        LinkedHashSet<ResourceLocation> filters = new LinkedHashSet<ResourceLocation>(visibleBlockFilters);
         if (!filters.add(id)) {
             return false;
         }
@@ -677,16 +677,16 @@ public final class RegionManager {
         return true;
     }
 
-    public static boolean addRegionVisibleBlockFilter(String regionName, class_2960 id) {
-        if (RegionManager.find(regionName) == null || !class_7923.field_41175.method_10250(id)) {
+    public static boolean addRegionVisibleBlockFilter(String regionName, ResourceLocation id) {
+        if (RegionManager.find(regionName) == null || !BuiltInRegistries.BLOCK.containsKey(id)) {
             return false;
         }
         String key = regionName.toLowerCase(Locale.ROOT);
-        LinkedHashSet<class_2960> filters = new LinkedHashSet<class_2960>(RegionManager.regionFilters(key));
+        LinkedHashSet<ResourceLocation> filters = new LinkedHashSet<ResourceLocation>(RegionManager.regionFilters(key));
         if (!filters.add(id)) {
             return false;
         }
-        LinkedHashMap<String, Set<class_2960>> all = new LinkedHashMap<String, Set<class_2960>>(regionVisibleBlockFilters);
+        LinkedHashMap<String, Set<ResourceLocation>> all = new LinkedHashMap<String, Set<ResourceLocation>>(regionVisibleBlockFilters);
         all.put(key, Set.copyOf(filters));
         regionVisibleBlockFilters = Map.copyOf(all);
         RegionManager.saveRegionFilters();
@@ -695,13 +695,13 @@ public final class RegionManager {
         return true;
     }
 
-    public static boolean removeRegionVisibleBlockFilter(String regionName, class_2960 id) {
+    public static boolean removeRegionVisibleBlockFilter(String regionName, ResourceLocation id) {
         String key = regionName.toLowerCase(Locale.ROOT);
-        LinkedHashSet<class_2960> filters = new LinkedHashSet<class_2960>(RegionManager.regionFilters(key));
+        LinkedHashSet<ResourceLocation> filters = new LinkedHashSet<ResourceLocation>(RegionManager.regionFilters(key));
         if (!filters.remove(id)) {
             return false;
         }
-        LinkedHashMap<String, Set<class_2960>> all = new LinkedHashMap<String, Set<class_2960>>(regionVisibleBlockFilters);
+        LinkedHashMap<String, Set<ResourceLocation>> all = new LinkedHashMap<String, Set<ResourceLocation>>(regionVisibleBlockFilters);
         if (filters.isEmpty()) {
             all.remove(key);
         } else {
@@ -716,7 +716,7 @@ public final class RegionManager {
 
     public static void clearRegionVisibleBlockFilters(String regionName) {
         String key = regionName.toLowerCase(Locale.ROOT);
-        LinkedHashMap<String, Set<class_2960>> all = new LinkedHashMap<String, Set<class_2960>>(regionVisibleBlockFilters);
+        LinkedHashMap<String, Set<ResourceLocation>> all = new LinkedHashMap<String, Set<ResourceLocation>>(regionVisibleBlockFilters);
         int count = RegionManager.regionFilters(key).size();
         all.remove(key);
         regionVisibleBlockFilters = Map.copyOf(all);
@@ -725,8 +725,8 @@ public final class RegionManager {
         RegionManager.message("Region filters cleared for " + regionName + " (" + count + ").");
     }
 
-    public static boolean removeVisibleBlockFilter(class_2960 id) {
-        LinkedHashSet<class_2960> filters = new LinkedHashSet<class_2960>(visibleBlockFilters);
+    public static boolean removeVisibleBlockFilter(ResourceLocation id) {
+        LinkedHashSet<ResourceLocation> filters = new LinkedHashSet<ResourceLocation>(visibleBlockFilters);
         if (!filters.remove(id)) {
             return false;
         }
@@ -745,26 +745,26 @@ public final class RegionManager {
         RegionManager.message("Visible block filters cleared (" + count + ").");
     }
 
-    public static void setPos1(class_2338 pos) {
-        pos1 = pos.method_10062();
+    public static void setPos1(BlockPos pos) {
+        pos1 = pos.immutable();
         RegionManager.message("Position 1: " + RegionManager.format(pos1));
     }
 
-    public static void setPos2(class_2338 pos) {
-        pos2 = pos.method_10062();
+    public static void setPos2(BlockPos pos) {
+        pos2 = pos.immutable();
         RegionManager.message("Position 2: " + RegionManager.format(pos2));
     }
 
     public static boolean add(String requestedName) {
-        class_310 client = class_310.method_1551();
-        if (client.field_1687 == null || pos1 == null || pos2 == null) {
+        Minecraft client = Minecraft.getInstance();
+        if (client.level == null || pos1 == null || pos2 == null) {
             RegionManager.message("Set both positions first.");
             return false;
         }
         String base = RegionManager.sanitizeName(requestedName == null || requestedName.isBlank() ? "region" : requestedName);
         String name = RegionManager.uniqueName(base);
         ArrayList<HiddenRegion> regions = new ArrayList<HiddenRegion>(snapshot);
-        HiddenRegion region = HiddenRegion.create(name, client.field_1687.method_27983().method_29177().toString(), pos1, pos2);
+        HiddenRegion region = HiddenRegion.create(name, client.level.dimension().identifier().toString(), pos1, pos2);
         regions.add(region);
         RegionManager.publish(regions, region);
         RegionManager.clearSelection();
@@ -779,11 +779,11 @@ public final class RegionManager {
             return false;
         }
         regions.remove(found);
-        LinkedHashMap<String, Set<class_2960>> filters = new LinkedHashMap<String, Set<class_2960>>(regionVisibleBlockFilters);
+        LinkedHashMap<String, Set<ResourceLocation>> filters = new LinkedHashMap<String, Set<ResourceLocation>>(regionVisibleBlockFilters);
         filters.remove(found.name().toLowerCase(Locale.ROOT));
         regionVisibleBlockFilters = Map.copyOf(filters);
         RegionManager.saveRegionFilters();
-        LinkedHashMap<String, Set<class_2960>> entityFilters = new LinkedHashMap<String, Set<class_2960>>(regionVisibleEntityFilters);
+        LinkedHashMap<String, Set<ResourceLocation>> entityFilters = new LinkedHashMap<String, Set<ResourceLocation>>(regionVisibleEntityFilters);
         entityFilters.remove(found.name().toLowerCase(Locale.ROOT));
         regionVisibleEntityFilters = Map.copyOf(entityFilters);
         RegionManager.saveRegionIdMap(REGION_ENTITY_FILTER_CONFIG, regionVisibleEntityFilters, "region entity filters");
@@ -806,12 +806,12 @@ public final class RegionManager {
         return false;
     }
 
-    public static boolean updateCoordinates(String name, class_2338 first, class_2338 second) {
+    public static boolean updateCoordinates(String name, BlockPos first, BlockPos second) {
         ArrayList<HiddenRegion> regions = new ArrayList<HiddenRegion>(snapshot);
         for (int i = 0; i < regions.size(); ++i) {
             HiddenRegion current = regions.get(i);
             if (!current.name().equalsIgnoreCase(name)) continue;
-            HiddenRegion changed = new HiddenRegion(current.name(), current.dimension(), Math.min(first.method_10263(), second.method_10263()), Math.min(first.method_10264(), second.method_10264()), Math.min(first.method_10260(), second.method_10260()), Math.max(first.method_10263(), second.method_10263()), Math.max(first.method_10264(), second.method_10264()), Math.max(first.method_10260(), second.method_10260()), current.enabled());
+            HiddenRegion changed = new HiddenRegion(current.name(), current.dimension(), Math.min(first.getX(), second.getX()), Math.min(first.getY(), second.getY()), Math.min(first.getZ(), second.getZ()), Math.max(first.getX(), second.getX()), Math.max(first.getY(), second.getY()), Math.max(first.getZ(), second.getZ()), current.enabled());
             regions.set(i, changed);
             snapshot = List.copyOf(regions);
             RegionManager.save();
@@ -915,7 +915,7 @@ public final class RegionManager {
         try {
             Files.createDirectories(FILTER_CONFIG.getParent(), new FileAttribute[0]);
             try (BufferedWriter writer = Files.newBufferedWriter(FILTER_CONFIG, new OpenOption[0]);){
-                GSON.toJson(visibleBlockFilters.stream().map(class_2960::toString).sorted().toList(), (Appendable)writer);
+                GSON.toJson(visibleBlockFilters.stream().map(ResourceLocation::toString).sorted().toList(), (Appendable)writer);
             }
         }
         catch (Exception e) {
@@ -927,7 +927,7 @@ public final class RegionManager {
         try {
             Files.createDirectories(REGION_FILTER_CONFIG.getParent(), new FileAttribute[0]);
             LinkedHashMap serialized = new LinkedHashMap();
-            regionVisibleBlockFilters.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> serialized.put((String)entry.getKey(), ((Set)entry.getValue()).stream().map(class_2960::toString).sorted().toList()));
+            regionVisibleBlockFilters.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> serialized.put((String)entry.getKey(), ((Set)entry.getValue()).stream().map(ResourceLocation::toString).sorted().toList()));
             try (BufferedWriter writer = Files.newBufferedWriter(REGION_FILTER_CONFIG, new OpenOption[0]);){
                 GSON.toJson(serialized, (Appendable)writer);
             }
@@ -937,7 +937,7 @@ public final class RegionManager {
         }
     }
 
-    private static Set<class_2960> loadIdList(Path path, boolean entityIds) {
+    private static Set<ResourceLocation> loadIdList(Path path, boolean entityIds) {
         Set set;
         block11: {
             if (!Files.exists(path, new LinkOption[0])) {
@@ -946,11 +946,11 @@ public final class RegionManager {
             BufferedReader reader = Files.newBufferedReader(path);
             try {
                 List loaded = (List)GSON.fromJson((Reader)reader, new TypeToken<List<String>>(){}.getType());
-                LinkedHashSet<class_2960> result = new LinkedHashSet<class_2960>();
+                LinkedHashSet<ResourceLocation> result = new LinkedHashSet<ResourceLocation>();
                 if (loaded != null) {
                     for (String value : loaded) {
-                        class_2960 id = class_2960.method_12829((String)value);
-                        if (id == null || !(entityIds ? class_7923.field_41177.method_10250(id) : class_7923.field_41175.method_10250(id))) continue;
+                        ResourceLocation id = ResourceLocation.tryParse((String)value);
+                        if (id == null || !(entityIds ? BuiltInRegistries.ENTITY_TYPE.containsKey(id) : BuiltInRegistries.BLOCK.containsKey(id))) continue;
                         result.add(id);
                     }
                 }
@@ -979,8 +979,8 @@ public final class RegionManager {
         return set;
     }
 
-    private static Map<String, Set<class_2960>> loadRegionIdMap(Path path, boolean entityIds) {
-        Map<String, Set<class_2960>> map;
+    private static Map<String, Set<ResourceLocation>> loadRegionIdMap(Path path, boolean entityIds) {
+        Map<String, Set<ResourceLocation>> map;
         block10: {
             if (!Files.exists(path, new LinkOption[0])) {
                 return Map.of();
@@ -992,11 +992,11 @@ public final class RegionManager {
                 LinkedHashMap result = new LinkedHashMap();
                 if (loaded != null) {
                     loaded.forEach((name, values) -> {
-                        LinkedHashSet<class_2960> ids = new LinkedHashSet<class_2960>();
+                        LinkedHashSet<ResourceLocation> ids = new LinkedHashSet<ResourceLocation>();
                         if (values != null) {
                             for (String value : values) {
-                                class_2960 id = class_2960.method_12829((String)value);
-                                if (id == null || !(entityIds ? class_7923.field_41177.method_10250(id) : class_7923.field_41175.method_10250(id))) continue;
+                                ResourceLocation id = ResourceLocation.tryParse((String)value);
+                                if (id == null || !(entityIds ? BuiltInRegistries.ENTITY_TYPE.containsKey(id) : BuiltInRegistries.BLOCK.containsKey(id))) continue;
                                 ids.add(id);
                             }
                         }
@@ -1030,11 +1030,11 @@ public final class RegionManager {
         return map;
     }
 
-    private static void saveIdList(Path path, Set<class_2960> ids, String description) {
+    private static void saveIdList(Path path, Set<ResourceLocation> ids, String description) {
         try {
             Files.createDirectories(path.getParent(), new FileAttribute[0]);
             try (BufferedWriter writer = Files.newBufferedWriter(path, new OpenOption[0]);){
-                GSON.toJson(ids.stream().map(class_2960::toString).sorted().toList(), (Appendable)writer);
+                GSON.toJson(ids.stream().map(ResourceLocation::toString).sorted().toList(), (Appendable)writer);
             }
         }
         catch (Exception e) {
@@ -1042,11 +1042,11 @@ public final class RegionManager {
         }
     }
 
-    private static void saveRegionIdMap(Path path, Map<String, Set<class_2960>> values, String description) {
+    private static void saveRegionIdMap(Path path, Map<String, Set<ResourceLocation>> values, String description) {
         try {
             Files.createDirectories(path.getParent(), new FileAttribute[0]);
             LinkedHashMap serialized = new LinkedHashMap();
-            values.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> serialized.put((String)entry.getKey(), ((Set)entry.getValue()).stream().map(class_2960::toString).sorted().toList()));
+            values.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> serialized.put((String)entry.getKey(), ((Set)entry.getValue()).stream().map(ResourceLocation::toString).sorted().toList()));
             try (BufferedWriter writer = Files.newBufferedWriter(path, new OpenOption[0]);){
                 GSON.toJson(serialized, (Appendable)writer);
             }
@@ -1057,33 +1057,32 @@ public final class RegionManager {
     }
 
     private static void refresh(HiddenRegion region) {
-        class_310 client = class_310.method_1551();
-        if (client.field_1687 == null) {
+        Minecraft client = Minecraft.getInstance();
+        if (client.level == null) {
             return;
         }
-        if (!region.dimension().equals(client.field_1687.method_27983().method_29177().toString())) {
+        if (!region.dimension().equals(client.level.dimension().identifier().toString())) {
             return;
         }
-        client.field_1769.method_62219(class_4076.method_18675((int)(region.minX() - 1)), class_4076.method_18675((int)(region.minY() - 1)), class_4076.method_18675((int)(region.minZ() - 1)), class_4076.method_18675((int)(region.maxX() + 1)), class_4076.method_18675((int)(region.maxY() + 1)), class_4076.method_18675((int)(region.maxZ() + 1)));
+        client.levelRenderer.setSectionRangeDirty(SectionPos.blockToSectionCoord((int)(region.minX() - 1)), SectionPos.blockToSectionCoord((int)(region.minY() - 1)), SectionPos.blockToSectionCoord((int)(region.minZ() - 1)), SectionPos.blockToSectionCoord((int)(region.maxX() + 1)), SectionPos.blockToSectionCoord((int)(region.maxY() + 1)), SectionPos.blockToSectionCoord((int)(region.maxZ() + 1)));
     }
 
     public static void refreshAll() {
-        class_310 client = class_310.method_1551();
-        if (client.field_1769 != null) {
-            client.field_1769.method_3279();
+        Minecraft client = Minecraft.getInstance();
+        if (client.levelRenderer != null) {
+            client.levelRenderer.allChanged();
         }
     }
 
-    private static String format(class_2338 pos) {
-        return pos.method_10263() + ", " + pos.method_10264() + ", " + pos.method_10260();
+    private static String format(BlockPos pos) {
+        return pos.getX() + ", " + pos.getY() + ", " + pos.getZ();
     }
 
     public static void message(String value) {
-        class_310 client = class_310.method_1551();
-        if (client.field_1724 != null) {
-            client.field_1724.method_7353((class_2561)class_2561.method_43470((String)("[Render Hide] " + value)), false);
+        Minecraft client = Minecraft.getInstance();
+        if (client.player != null) {
+            client.player.displayClientMessage((Component)Component.literal((String)("[Render Hide] " + value)), false);
         }
     }
 }
-
 

@@ -6,16 +6,16 @@
  *  net.fabricmc.api.Environment
  *  net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext
  *  net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents
- *  net.minecraft.class_12249
- *  net.minecraft.class_2338
- *  net.minecraft.class_238
- *  net.minecraft.class_243
- *  net.minecraft.class_259
- *  net.minecraft.class_265
- *  net.minecraft.class_310
- *  net.minecraft.class_4587
- *  net.minecraft.class_4588
- *  net.minecraft.class_9974
+ *  net.minecraft.RenderTypes
+ *  net.minecraft.BlockPos
+ *  net.minecraft.AABB
+ *  net.minecraft.Vec3
+ *  net.minecraft.Shapes
+ *  net.minecraft.VoxelShape
+ *  net.minecraft.Minecraft
+ *  net.minecraft.PoseStack
+ *  net.minecraft.VertexConsumer
+ *  net.minecraft.ShapeRenderer
  */
 package com.ruok0214.renderhide;
 
@@ -25,16 +25,16 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
-import net.minecraft.class_12249;
-import net.minecraft.class_2338;
-import net.minecraft.class_238;
-import net.minecraft.class_243;
-import net.minecraft.class_259;
-import net.minecraft.class_265;
-import net.minecraft.class_310;
-import net.minecraft.class_4587;
-import net.minecraft.class_4588;
-import net.minecraft.class_9974;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraft.client.Minecraft;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.minecraft.client.renderer.ShapeRenderer;
 
 @Environment(value=EnvType.CLIENT)
 public final class SelectionOverlayRenderer {
@@ -61,15 +61,15 @@ public final class SelectionOverlayRenderer {
     }
 
     private static void render(WorldRenderContext context) {
-        class_310 client = class_310.method_1551();
-        if (client.field_1687 == null || client.field_1773 == null || client.field_1773.method_19418() == null || context.consumers() == null || context.matrices() == null) {
+        Minecraft client = Minecraft.getInstance();
+        if (client.level == null || client.gameRenderer == null || client.gameRenderer.getMainCamera() == null || context.consumers() == null || context.matrices() == null) {
             return;
         }
-        class_243 camera = client.field_1773.method_19418().method_71156();
-        class_4588 lines = context.consumers().method_73477(class_12249.method_76668());
+        Vec3 camera = client.gameRenderer.getMainCamera().position();
+        VertexConsumer lines = context.consumers().getBuffer(RenderTypes.linesTranslucent());
         if (RegionManager.isGloballyEnabled()) {
-            class_2338 pos1 = RegionManager.getPos1();
-            class_2338 pos2 = RegionManager.getPos2();
+            BlockPos pos1 = RegionManager.getPos1();
+            BlockPos pos2 = RegionManager.getPos2();
             if (pos1 != null) {
                 if (pos2 == null) {
                     SelectionOverlayRenderer.drawBlockBox(context, lines, camera, pos1, pos1, -50384, 3.0f);
@@ -81,20 +81,20 @@ public final class SelectionOverlayRenderer {
         if (!showSavedRegions) {
             return;
         }
-        String dimension = client.field_1687.method_27983().method_29177().toString();
+        String dimension = client.level.dimension().identifier().toString();
         for (HiddenRegion region : RegionManager.regions()) {
             if (!region.enabled() || !region.dimension().equals(dimension)) continue;
             SelectionOverlayRenderer.drawBox(context, lines, camera, region.minX(), region.minY(), region.minZ(), (double)region.maxX() + 1.0, (double)region.maxY() + 1.0, (double)region.maxZ() + 1.0, -16121, 2.0f);
         }
     }
 
-    private static void drawBlockBox(WorldRenderContext context, class_4588 lines, class_243 camera, class_2338 first, class_2338 second, int color, float width) {
-        SelectionOverlayRenderer.drawBox(context, lines, camera, Math.min(first.method_10263(), second.method_10263()), Math.min(first.method_10264(), second.method_10264()), Math.min(first.method_10260(), second.method_10260()), (double)Math.max(first.method_10263(), second.method_10263()) + 1.0, (double)Math.max(first.method_10264(), second.method_10264()) + 1.0, (double)Math.max(first.method_10260(), second.method_10260()) + 1.0, color, width);
+    private static void drawBlockBox(WorldRenderContext context, VertexConsumer lines, Vec3 camera, BlockPos first, BlockPos second, int color, float width) {
+        SelectionOverlayRenderer.drawBox(context, lines, camera, Math.min(first.getX(), second.getX()), Math.min(first.getY(), second.getY()), Math.min(first.getZ(), second.getZ()), (double)Math.max(first.getX(), second.getX()) + 1.0, (double)Math.max(first.getY(), second.getY()) + 1.0, (double)Math.max(first.getZ(), second.getZ()) + 1.0, color, width);
     }
 
-    private static void drawBox(WorldRenderContext context, class_4588 lines, class_243 camera, double minX, double minY, double minZ, double maxX, double maxY, double maxZ, int color, float width) {
-        class_265 shape = class_259.method_1078((class_238)new class_238(-0.002, -0.002, -0.002, maxX - minX + 0.002, maxY - minY + 0.002, maxZ - minZ + 0.002));
-        class_9974.method_62296((class_4587)context.matrices(), (class_4588)lines, (class_265)shape, (double)(minX - camera.field_1352), (double)(minY - camera.field_1351), (double)(minZ - camera.field_1350), (int)color, (float)width);
+    private static void drawBox(WorldRenderContext context, VertexConsumer lines, Vec3 camera, double minX, double minY, double minZ, double maxX, double maxY, double maxZ, int color, float width) {
+        VoxelShape shape = Shapes.create((AABB)new AABB(-0.002, -0.002, -0.002, maxX - minX + 0.002, maxY - minY + 0.002, maxZ - minZ + 0.002));
+        ShapeRenderer.renderShape((PoseStack)context.matrices(), (VertexConsumer)lines, (VoxelShape)shape, (double)(minX - camera.x), (double)(minY - camera.y), (double)(minZ - camera.z), (int)color, (float)width);
     }
 }
 

@@ -16,17 +16,17 @@
  *  net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
  *  net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
  *  net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
- *  net.minecraft.class_239
- *  net.minecraft.class_239$class_240
- *  net.minecraft.class_2561
- *  net.minecraft.class_2960
- *  net.minecraft.class_304
- *  net.minecraft.class_304$class_11900
- *  net.minecraft.class_310
- *  net.minecraft.class_3675$class_307
- *  net.minecraft.class_3965
- *  net.minecraft.class_437
- *  net.minecraft.class_7923
+ *  net.minecraft.HitResult
+ *  net.minecraft.HitResult$Type
+ *  net.minecraft.Component
+ *  net.minecraft.Identifier
+ *  net.minecraft.KeyMapping
+ *  net.minecraft.KeyMapping$Category
+ *  net.minecraft.Minecraft
+ *  net.minecraft.InputConstants$Type
+ *  net.minecraft.BlockHitResult
+ *  net.minecraft.Screen
+ *  net.minecraft.BuiltInRegistries
  *  org.slf4j.Logger
  *  org.slf4j.LoggerFactory
  */
@@ -46,20 +46,20 @@ import java.util.concurrent.CompletableFuture;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.minecraft.class_239;
-import net.minecraft.class_2561;
-import net.minecraft.class_2960;
-import net.minecraft.class_304;
-import net.minecraft.class_310;
-import net.minecraft.class_3675;
-import net.minecraft.class_3965;
-import net.minecraft.class_437;
-import net.minecraft.class_7923;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.registries.BuiltInRegistries;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,14 +67,14 @@ import org.slf4j.LoggerFactory;
 public final class RenderHideClient
 implements ClientModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger((String)"renderhide");
-    private static final class_304.class_11900 CATEGORY = class_304.class_11900.method_74698((class_2960)class_2960.method_60655((String)"renderhide", (String)"keys"));
-    private static class_304 toggleKey;
-    private static class_304 pos1Key;
-    private static class_304 pos2Key;
-    private static class_304 addKey;
-    private static class_304 savedOutlinesKey;
-    private static class_304 virtualLightKey;
-    private static class_304 guiKey;
+    private static final KeyMapping.Category CATEGORY = KeyMapping.Category.MISC;
+    private static KeyMapping toggleKey;
+    private static KeyMapping pos1Key;
+    private static KeyMapping pos2Key;
+    private static KeyMapping addKey;
+    private static KeyMapping savedOutlinesKey;
+    private static KeyMapping virtualLightKey;
+    private static KeyMapping guiKey;
 
     public void onInitializeClient() {
         RegionManager.load();
@@ -86,80 +86,80 @@ implements ClientModInitializer {
     }
 
     private void registerKeys() {
-        toggleKey = KeyBindingHelper.registerKeyBinding((class_304)new class_304("key.renderhide.toggle", class_3675.class_307.field_1668, 297, CATEGORY));
-        pos1Key = KeyBindingHelper.registerKeyBinding((class_304)new class_304("key.renderhide.pos1", class_3675.class_307.field_1668, 298, CATEGORY));
-        pos2Key = KeyBindingHelper.registerKeyBinding((class_304)new class_304("key.renderhide.pos2", class_3675.class_307.field_1668, 299, CATEGORY));
-        addKey = KeyBindingHelper.registerKeyBinding((class_304)new class_304("key.renderhide.add", class_3675.class_307.field_1668, 296, CATEGORY));
-        savedOutlinesKey = KeyBindingHelper.registerKeyBinding((class_304)new class_304("key.renderhide.saved_outlines", class_3675.class_307.field_1668, 295, CATEGORY));
-        virtualLightKey = KeyBindingHelper.registerKeyBinding((class_304)new class_304("key.renderhide.virtual_light", class_3675.class_307.field_1668, -1, CATEGORY));
-        guiKey = KeyBindingHelper.registerKeyBinding((class_304)new class_304("key.renderhide.gui", class_3675.class_307.field_1668, 72, CATEGORY));
+        toggleKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.renderhide.toggle", 297, CATEGORY));
+        pos1Key = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.renderhide.pos1", 298, CATEGORY));
+        pos2Key = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.renderhide.pos2", 299, CATEGORY));
+        addKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.renderhide.add", 296, CATEGORY));
+        savedOutlinesKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.renderhide.saved_outlines", 295, CATEGORY));
+        virtualLightKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.renderhide.virtual_light", -1, CATEGORY));
+        guiKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.renderhide.gui", 72, CATEGORY));
     }
 
-    private void onTick(class_310 client) {
+    private void onTick(Minecraft client) {
         RegionManager.updateDimension(client);
-        while (toggleKey.method_1436()) {
+        while (toggleKey.consumeClick()) {
             RegionManager.toggleGlobal();
         }
-        while (pos1Key.method_1436()) {
+        while (pos1Key.consumeClick()) {
             RenderHideClient.setLookedAt(true);
         }
-        while (pos2Key.method_1436()) {
+        while (pos2Key.consumeClick()) {
             RenderHideClient.setLookedAt(false);
         }
-        while (addKey.method_1436()) {
+        while (addKey.consumeClick()) {
             RegionManager.add("region");
         }
-        while (savedOutlinesKey.method_1436()) {
+        while (savedOutlinesKey.consumeClick()) {
             SelectionOverlayRenderer.toggleSavedRegions();
         }
-        while (virtualLightKey.method_1436()) {
+        while (virtualLightKey.consumeClick()) {
             RegionManager.toggleVirtualLight();
         }
-        while (guiKey.method_1436()) {
-            if (client.field_1755 instanceof RenderHideScreen) {
-                client.method_1507(null);
+        while (guiKey.consumeClick()) {
+            if (client.screen instanceof RenderHideScreen) {
+                client.setScreen(null);
                 continue;
             }
-            client.method_1507((class_437)new RenderHideScreen());
+            client.setScreenAndShow(new RenderHideScreen());
         }
     }
 
     private static boolean setLookedAt(boolean first) {
-        class_3965 hit;
-        class_310 client = class_310.method_1551();
-        class_239 class_2392 = client.field_1765;
-        if (!(class_2392 instanceof class_3965) || (hit = (class_3965)class_2392).method_17783() != class_239.class_240.field_1332) {
+        BlockHitResult hit;
+        Minecraft client = Minecraft.getInstance();
+        HitResult result = client.hitResult;
+        if (!(result instanceof BlockHitResult) || (hit = (BlockHitResult)result).getType() != HitResult.Type.BLOCK) {
             RegionManager.message("Look at a block first.");
             return false;
         }
         if (first) {
-            RegionManager.setPos1(hit.method_17777());
+            RegionManager.setPos1(hit.getBlockPos());
         } else {
-            RegionManager.setPos2(hit.method_17777());
+            RegionManager.setPos2(hit.getBlockPos());
         }
         return true;
     }
 
     private void registerCommands() {
-        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)ClientCommandManager.literal((String)"renderhide").executes(ctx -> RenderHideClient.help((FabricClientCommandSource)ctx.getSource()))).then(ClientCommandManager.literal((String)"pos1").executes(ctx -> RenderHideClient.setLookedAt(true) ? 1 : 0))).then(ClientCommandManager.literal((String)"pos2").executes(ctx -> RenderHideClient.setLookedAt(false) ? 1 : 0))).then(((LiteralArgumentBuilder)ClientCommandManager.literal((String)"add").executes(ctx -> RegionManager.add("region") ? 1 : 0)).then(ClientCommandManager.argument((String)"name", (ArgumentType)StringArgumentType.word()).executes(ctx -> RegionManager.add(StringArgumentType.getString((CommandContext)ctx, (String)"name")) ? 1 : 0)))).then(ClientCommandManager.literal((String)"remove").then(ClientCommandManager.argument((String)"name", (ArgumentType)StringArgumentType.word()).suggests((ctx, builder) -> RenderHideClient.suggestNames(builder)).executes(ctx -> RenderHideClient.result(RegionManager.remove(StringArgumentType.getString((CommandContext)ctx, (String)"name")), "Region not found."))))).then(ClientCommandManager.literal((String)"toggle").then(ClientCommandManager.argument((String)"name", (ArgumentType)StringArgumentType.word()).suggests((ctx, builder) -> RenderHideClient.suggestNames(builder)).executes(ctx -> RenderHideClient.result(RegionManager.toggle(StringArgumentType.getString((CommandContext)ctx, (String)"name")), "Region not found."))))).then(ClientCommandManager.literal((String)"global").executes(ctx -> {
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)ClientCommands.literal((String)"renderhide").executes(ctx -> RenderHideClient.help((FabricClientCommandSource)ctx.getSource()))).then(ClientCommands.literal((String)"pos1").executes(ctx -> RenderHideClient.setLookedAt(true) ? 1 : 0))).then(ClientCommands.literal((String)"pos2").executes(ctx -> RenderHideClient.setLookedAt(false) ? 1 : 0))).then(((LiteralArgumentBuilder)ClientCommands.literal((String)"add").executes(ctx -> RegionManager.add("region") ? 1 : 0)).then(ClientCommands.argument((String)"name", (ArgumentType)StringArgumentType.word()).executes(ctx -> RegionManager.add(StringArgumentType.getString((CommandContext)ctx, (String)"name")) ? 1 : 0)))).then(ClientCommands.literal((String)"remove").then(ClientCommands.argument((String)"name", (ArgumentType)StringArgumentType.word()).suggests((ctx, builder) -> RenderHideClient.suggestNames(builder)).executes(ctx -> RenderHideClient.result(RegionManager.remove(StringArgumentType.getString((CommandContext)ctx, (String)"name")), "Region not found."))))).then(ClientCommands.literal((String)"toggle").then(ClientCommands.argument((String)"name", (ArgumentType)StringArgumentType.word()).suggests((ctx, builder) -> RenderHideClient.suggestNames(builder)).executes(ctx -> RenderHideClient.result(RegionManager.toggle(StringArgumentType.getString((CommandContext)ctx, (String)"name")), "Region not found."))))).then(ClientCommands.literal((String)"global").executes(ctx -> {
             RegionManager.toggleGlobal();
             return 1;
-        }))).then(ClientCommandManager.literal((String)"outlines").executes(ctx -> {
+        }))).then(ClientCommands.literal((String)"outlines").executes(ctx -> {
             SelectionOverlayRenderer.toggleSavedRegions();
             return 1;
-        }))).then(ClientCommandManager.literal((String)"light").executes(ctx -> {
+        }))).then(ClientCommands.literal((String)"light").executes(ctx -> {
             RegionManager.toggleVirtualLight();
             return 1;
-        }))).then(ClientCommandManager.literal((String)"gui").executes(ctx -> {
-            class_310.method_1551().method_1507((class_437)new RenderHideScreen());
+        }))).then(ClientCommands.literal((String)"gui").executes(ctx -> {
+            Minecraft.getInstance().setScreenAndShow(new RenderHideScreen());
             return 1;
-        }))).then(((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)ClientCommandManager.literal((String)"filter").then(ClientCommandManager.literal((String)"add").then(ClientCommandManager.argument((String)"block", (ArgumentType)StringArgumentType.greedyString()).suggests((ctx, builder) -> RenderHideClient.suggestBlocks(builder, false)).executes(ctx -> RenderHideClient.addFilter(StringArgumentType.getString((CommandContext)ctx, (String)"block")))))).then(ClientCommandManager.literal((String)"remove").then(ClientCommandManager.argument((String)"block", (ArgumentType)StringArgumentType.greedyString()).suggests((ctx, builder) -> RenderHideClient.suggestBlocks(builder, true)).executes(ctx -> RenderHideClient.removeFilter(StringArgumentType.getString((CommandContext)ctx, (String)"block")))))).then(ClientCommandManager.literal((String)"list").executes(ctx -> RenderHideClient.listFilters((FabricClientCommandSource)ctx.getSource())))).then(ClientCommandManager.literal((String)"clear").executes(ctx -> {
+        }))).then(((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)ClientCommands.literal((String)"filter").then(ClientCommands.literal((String)"add").then(ClientCommands.argument((String)"block", (ArgumentType)StringArgumentType.greedyString()).suggests((ctx, builder) -> RenderHideClient.suggestBlocks(builder, false)).executes(ctx -> RenderHideClient.addFilter(StringArgumentType.getString((CommandContext)ctx, (String)"block")))))).then(ClientCommands.literal((String)"remove").then(ClientCommands.argument((String)"block", (ArgumentType)StringArgumentType.greedyString()).suggests((ctx, builder) -> RenderHideClient.suggestBlocks(builder, true)).executes(ctx -> RenderHideClient.removeFilter(StringArgumentType.getString((CommandContext)ctx, (String)"block")))))).then(ClientCommands.literal((String)"list").executes(ctx -> RenderHideClient.listFilters((FabricClientCommandSource)ctx.getSource())))).then(ClientCommands.literal((String)"clear").executes(ctx -> {
             RegionManager.clearVisibleBlockFilters();
             return 1;
-        })))).then(ClientCommandManager.literal((String)"clear").executes(ctx -> {
+        })))).then(ClientCommands.literal((String)"clear").executes(ctx -> {
             RegionManager.clear();
             return 1;
-        }))).then(ClientCommandManager.literal((String)"list").executes(ctx -> RenderHideClient.list((FabricClientCommandSource)ctx.getSource())))).then(ClientCommandManager.literal((String)"reload").executes(ctx -> {
+        }))).then(ClientCommands.literal((String)"list").executes(ctx -> RenderHideClient.list((FabricClientCommandSource)ctx.getSource())))).then(ClientCommands.literal((String)"reload").executes(ctx -> {
             RegionManager.refreshAll();
             return 1;
         }))));
@@ -176,14 +176,14 @@ implements ClientModInitializer {
         if (filtersOnly) {
             RegionManager.visibleBlockFilters().forEach(id -> builder.suggest(id.toString()));
         } else {
-            class_7923.field_41175.method_10235().forEach(id -> builder.suggest(id.toString()));
+            BuiltInRegistries.BLOCK.keySet().forEach(id -> builder.suggest(id.toString()));
         }
         return builder.buildFuture();
     }
 
     private static int addFilter(String value) {
-        class_2960 id = class_2960.method_12829((String)(value = value.trim()));
-        if (id == null || !class_7923.field_41175.method_10250(id)) {
+        ResourceLocation id = ResourceLocation.tryParse(value = value.trim());
+        if (id == null || !BuiltInRegistries.BLOCK.containsKey(id)) {
             RegionManager.message("Unknown block: " + value);
             return 0;
         }
@@ -191,17 +191,17 @@ implements ClientModInitializer {
     }
 
     private static int removeFilter(String value) {
-        class_2960 id = class_2960.method_12829((String)(value = value.trim()));
+        ResourceLocation id = ResourceLocation.tryParse(value = value.trim());
         return RenderHideClient.result(id != null && RegionManager.removeVisibleBlockFilter(id), "Block is not in the visible filter.");
     }
 
     private static int listFilters(FabricClientCommandSource source) {
         if (RegionManager.visibleBlockFilters().isEmpty()) {
-            source.sendFeedback((class_2561)class_2561.method_43470((String)"[Render Hide] Visible block filters: none (all blocks are hidden)."));
+            source.sendFeedback((Component)Component.literal((String)"[Render Hide] Visible block filters: none (all blocks are hidden)."));
             return 1;
         }
-        source.sendFeedback((class_2561)class_2561.method_43470((String)"[Render Hide] Blocks kept visible inside hidden regions:"));
-        RegionManager.visibleBlockFilters().stream().sorted().forEach(id -> source.sendFeedback((class_2561)class_2561.method_43470((String)("- " + String.valueOf(id)))));
+        source.sendFeedback((Component)Component.literal((String)"[Render Hide] Blocks kept visible inside hidden regions:"));
+        RegionManager.visibleBlockFilters().stream().sorted().forEach(id -> source.sendFeedback((Component)Component.literal((String)("- " + String.valueOf(id)))));
         return RegionManager.visibleBlockFilters().size();
     }
 
@@ -214,23 +214,22 @@ implements ClientModInitializer {
 
     private static int list(FabricClientCommandSource source) {
         if (RegionManager.regions().isEmpty()) {
-            source.sendFeedback((class_2561)class_2561.method_43470((String)"[Render Hide] No regions saved."));
+            source.sendFeedback((Component)Component.literal((String)"[Render Hide] No regions saved."));
             return 1;
         }
-        source.sendFeedback((class_2561)class_2561.method_43470((String)"[Render Hide] Saved regions:"));
+        source.sendFeedback((Component)Component.literal((String)"[Render Hide] Saved regions:"));
         for (HiddenRegion region : RegionManager.regions()) {
-            source.sendFeedback((class_2561)class_2561.method_43470((String)("- " + region.name() + " | " + (region.enabled() ? "hidden" : "visible") + " | " + region.blockCount() + " blocks | " + region.dimension())));
+            source.sendFeedback((Component)Component.literal((String)("- " + region.name() + " | " + (region.enabled() ? "hidden" : "visible") + " | " + region.blockCount() + " blocks | " + region.dimension())));
         }
         return RegionManager.regions().size();
     }
 
     private static int help(FabricClientCommandSource source) {
-        source.sendFeedback((class_2561)class_2561.method_43470((String)"[Render Hide] H=GUI, F9=pos1, F10=pos2, F7=add, F8=global toggle, F6=saved outlines"));
-        source.sendFeedback((class_2561)class_2561.method_43470((String)"/renderhide add [name] | remove <name> | toggle <name> | list | clear"));
-        source.sendFeedback((class_2561)class_2561.method_43470((String)"/renderhide filter add|remove <block> | filter list|clear"));
-        source.sendFeedback((class_2561)class_2561.method_43470((String)"/renderhide light = virtual light toggle"));
+        source.sendFeedback((Component)Component.literal((String)"[Render Hide] H=GUI, F9=pos1, F10=pos2, F7=add, F8=global toggle, F6=saved outlines"));
+        source.sendFeedback((Component)Component.literal((String)"/renderhide add [name] | remove <name> | toggle <name> | list | clear"));
+        source.sendFeedback((Component)Component.literal((String)"/renderhide filter add|remove <block> | filter list|clear"));
+        source.sendFeedback((Component)Component.literal((String)"/renderhide light = virtual light toggle"));
         return 1;
     }
 }
-
 
