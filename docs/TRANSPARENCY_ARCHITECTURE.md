@@ -27,8 +27,9 @@ The same decision is used everywhere:
 
 ## Renderer boundaries
 
-- Vanilla/Fabric static chunks and fluids: `SectionBuilderMixin`,
+- Vanilla static chunks and fluids: `SectionBuilderMixin`,
   `BlockModelRendererMixin`
+- Fabric Indigo static chunks: `IndigoTerrainRendererMixin`
 - Vanilla/Fabric virtual light: `BlockRenderManagerMixin`
 - Moving blocks and pistons: `PistonBlockEntityRendererMixin`,
   `MovingBlockRenderStateMixin`, `MovingBlockSubmissionMixin`,

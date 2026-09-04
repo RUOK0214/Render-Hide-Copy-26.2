@@ -1,4 +1,4 @@
-# Render Hide 2.5.0-alpha.3 — Minecraft 26.2 port
+# Render Hide 2.5.0-alpha.4 — Minecraft 26.2 port
 
 Port based on the supplied `render-hide-1.21.11-2.5.0-alpha.1.jar` and its
 matching source revision. This repository ports that exact behavior to
@@ -6,9 +6,12 @@ Minecraft 26.2.
 The original filtering, entity handling, lighting, GUI, commands, keybindings,
 selection outlines, and opacity rules remain the baseline.
 
-Alpha.3 removes block-state-to-AIR substitution. Static blocks, fluids, pistons,
+Alpha.4 removes block-state-to-AIR substitution. Static blocks, fluids, pistons,
 and other moving blocks now share a renderer-only opacity decision: normal,
 translucent, or skipped at the final geometry/submission boundary.
+
+Alpha.4 also applies that decision inside Fabric Indigo's alternate terrain
+quad pipeline, which bypasses Vanilla's final `BlockQuadOutput` callbacks.
 
 ## Requirements
 
