@@ -38,7 +38,10 @@ abstract class BlockModelRendererMixin {
     @Inject(method={"shouldRenderFace"}, at={@At(value="HEAD")}, cancellable=true)
     private void renderhide$exposeBoundary(BlockAndTintGetter world, BlockState state,
             Direction direction, BlockPos neighborPos, CallbackInfoReturnable<Boolean> cir) {
-        if (RegionManager.affectsOcclusion(neighborPos, world.getBlockState(neighborPos))) {
+        BlockPos currentPos = neighborPos.relative(direction.getOpposite());
+        if (!RegionManager.affectsOcclusion(currentPos, state)
+                && RegionManager.affectsOcclusion(
+                        neighborPos, world.getBlockState(neighborPos))) {
             cir.setReturnValue(true);
         }
     }

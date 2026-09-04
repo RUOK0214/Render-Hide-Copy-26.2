@@ -12,8 +12,9 @@ lighting rules. Opacity is global and stored separately in
 | 1-99% | Keep the real state/model, force a translucent layer, multiply vertex alpha | Keep the moving model, submit it to the translucent phase, multiply vertex alpha |
 | 100% | Use the unchanged normal renderer path | Use the unchanged normal renderer path |
 
-Blocks listed in a global or regional visible filter always render at 100%.
-Entity filtering remains independent from block opacity.
+Blocks and entities listed in a global or regional visible filter always render
+at 100%. Unfiltered entities inside an active region use the same global opacity
+value as hidden blocks.
 
 The same decision is used everywhere:
 
@@ -30,7 +31,8 @@ The same decision is used everywhere:
 - Vanilla static chunks and fluids: `SectionBuilderMixin`,
   `BlockModelRendererMixin`
 - Fabric Indigo static chunks: `IndigoTerrainRendererMixin`
-- Vanilla/Fabric virtual light: `BlockRenderManagerMixin`
+- Vanilla/Fabric virtual light: `BlockRenderManagerMixin`,
+  `IndigoAoCalculatorMixin`
 - Moving blocks and pistons: `PistonBlockEntityRendererMixin`,
   `MovingBlockRenderStateMixin`, `MovingBlockSubmissionMixin`,
   `FallingBlockCommandRendererMixin`
@@ -38,6 +40,12 @@ The same decision is used everywhere:
   `SodiumGhostBlockMixin`, `SodiumFluidRendererMixin`,
   `SodiumBlockOcclusionMixin`, `SodiumVirtualLightMixin`,
   `SodiumLightPipelineMixin`
+- Entities: `EntityRenderManagerMixin`, `EntityRenderStateMixin`,
+  `EntityAlphaSubmitNodeCollector`
+
+Moving render states normally report AIR for every neighbouring position.
+Render Hide supplies the states of adjacent piston-moved blocks while they are
+translucent so the normal face-culling rules can remove shared internal faces.
 
 Changing vertex alpha without moving an opaque block to a translucent layer is
 not sufficient. Likewise, changing a layer after a face or model was removed is

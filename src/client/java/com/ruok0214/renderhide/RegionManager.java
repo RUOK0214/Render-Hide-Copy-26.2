@@ -442,13 +442,13 @@ public final class RegionManager {
         return regionVisibleEntityFilters.getOrDefault(regionName.toLowerCase(Locale.ROOT), Set.of());
     }
 
-    public static boolean isEntityHidden(Entity entity) {
+    public static float entityRenderOpacity(Entity entity) {
         if (!globallyEnabled) {
-            return false;
+            return 1.0f;
         }
         Identifier id = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
         if (visibleEntityFilters.contains(id)) {
-            return false;
+            return 1.0f;
         }
         BlockPos pos = BlockPos.containing(entity.getBoundingBox().getCenter());
         boolean inside = false;
@@ -456,9 +456,13 @@ public final class RegionManager {
             if (!region.contains(pos, activeDimension)) continue;
             inside = true;
             if (!RegionManager.regionEntityFilters(region.name()).contains(id)) continue;
-            return false;
+            return 1.0f;
         }
-        return inside;
+        return inside ? hiddenBlockOpacity : 1.0f;
+    }
+
+    public static boolean isEntityHidden(Entity entity) {
+        return RegionManager.entityRenderOpacity(entity) <= 0.0f;
     }
 
     public static boolean addVisibleEntityFilter(Identifier id) {

@@ -24,20 +24,24 @@ abstract class PistonBlockEntityRendererMixin {
             CallbackInfo ci) {
         BlockPos pos = piston.getBlockPos();
         if (renderState.block != null) {
-            ((MovingBlockOpacityAccess) renderState.block).renderhide$setOpacity(
+            MovingBlockOpacityAccess access = (MovingBlockOpacityAccess) renderState.block;
+            access.renderhide$setOpacity(
                     RegionManager.movingBlockRenderOpacity(
                             renderState.block.blockState,
                             pos,
                             renderState.block.randomSeedPos,
                             renderState.block.blockPos));
+            access.renderhide$setMovementDirection(piston.getMovementDirection());
         }
         if (renderState.base != null) {
-            ((MovingBlockOpacityAccess) renderState.base).renderhide$setOpacity(
+            MovingBlockOpacityAccess access = (MovingBlockOpacityAccess) renderState.base;
+            access.renderhide$setOpacity(
                     RegionManager.movingBlockRenderOpacity(
                             renderState.base.blockState,
                             pos,
                             renderState.base.randomSeedPos,
                             renderState.base.blockPos));
+            access.renderhide$setMovementDirection(piston.getMovementDirection());
         }
     }
 }

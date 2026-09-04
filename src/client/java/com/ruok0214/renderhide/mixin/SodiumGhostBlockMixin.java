@@ -23,7 +23,6 @@ import net.caffeinemc.mods.sodium.client.render.model.MutableQuadViewImpl;
 import net.minecraft.client.renderer.block.dispatch.BlockStateModel;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
@@ -95,15 +94,6 @@ abstract class SodiumGhostBlockMixin {
             return ChunkSectionLayer.TRANSLUCENT;
         }
         return mutableQuadViewImpl.getRenderType();
-    }
-
-    @Redirect(method={"processQuad"}, at=@At(value="INVOKE", target="Lnet/caffeinemc/mods/sodium/client/render/model/MutableQuadViewImpl;getCullFace()Lnet/minecraft/core/Direction;"), remap=false, require=0)
-    private Direction renderhide$exposeFacesBesideGhostBlocks(MutableQuadViewImpl mutableQuadViewImpl) {
-        Direction class_23502 = mutableQuadViewImpl.getCullFace();
-        return class_23502 != null && this.renderhide$currentPos != null
-                && this.renderhide$currentState != null
-                && RegionManager.affectsOcclusion(this.renderhide$currentPos, this.renderhide$currentState)
-                ? null : class_23502;
     }
 
     @Inject(method={"renderModel"}, at={@At(value="RETURN")}, remap=false)

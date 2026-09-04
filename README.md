@@ -1,4 +1,4 @@
-# Render Hide 2.5.0-alpha.4 — Minecraft 26.2 port
+# Render Hide 2.5.0-alpha.5 — Minecraft 26.2 port
 
 Port based on the supplied `render-hide-1.21.11-2.5.0-alpha.1.jar` and its
 matching source revision. This repository ports that exact behavior to
@@ -12,6 +12,10 @@ translucent, or skipped at the final geometry/submission boundary.
 
 Alpha.4 also applies that decision inside Fabric Indigo's alternate terrain
 quad pipeline, which bypasses Vanilla's final `BlockQuadOutput` callbacks.
+
+Alpha.5 removes internal faces between adjacent translucent moving blocks,
+prevents hidden neighbours from darkening visible filter blocks in Indigo, and
+applies the opacity slider to unfiltered entities and their submitted models.
 
 ## Requirements
 
