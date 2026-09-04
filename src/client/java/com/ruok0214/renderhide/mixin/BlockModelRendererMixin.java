@@ -16,10 +16,12 @@
  */
 package com.ruok0214.renderhide.mixin;
 
+import com.ruok0214.renderhide.MovingBlockOpacityAccess;
 import com.ruok0214.renderhide.RegionManager;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.renderer.block.BlockAndTintGetter;
+import net.minecraft.client.renderer.block.MovingBlockRenderState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.state.BlockState;
@@ -39,7 +41,14 @@ abstract class BlockModelRendererMixin {
     private void renderhide$exposeBoundary(BlockAndTintGetter world, BlockState state,
             Direction direction, BlockPos neighborPos, CallbackInfoReturnable<Boolean> cir) {
         BlockPos currentPos = neighborPos.relative(direction.getOpposite());
-        if (!RegionManager.affectsOcclusion(currentPos, state)
+        boolean currentAffected = RegionManager.affectsOcclusion(currentPos, state);
+        if (world instanceof MovingBlockRenderState moving) {
+            float opacity = ((MovingBlockOpacityAccess) moving).renderhide$getOpacity();
+            if (!Float.isNaN(opacity)) {
+                currentAffected = opacity < 1.0F;
+            }
+        }
+        if (!currentAffected
                 && RegionManager.affectsOcclusion(
                         neighborPos, world.getBlockState(neighborPos))) {
             cir.setReturnValue(true);
