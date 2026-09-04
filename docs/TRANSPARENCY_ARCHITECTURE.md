@@ -45,7 +45,13 @@ The same decision is used everywhere:
 
 Moving render states normally report AIR for every neighbouring position.
 Render Hide supplies the states of adjacent piston-moved blocks while they are
-translucent so the normal face-culling rules can remove shared internal faces.
+translucent and enables the moving renderer's culling pass so the normal rules
+can remove shared internal faces.
+
+Entity renderers may submit block models as well as ordinary entity models.
+The item-frame body is one such block model: untinted quads receive a generated
+alpha tint, while its forward Z-offset is retained by a translucent equivalent
+render type. The displayed item continues through the item submission path.
 
 Changing vertex alpha without moving an opaque block to a translucent layer is
 not sufficient. Likewise, changing a layer after a face or model was removed is
@@ -62,4 +68,5 @@ cached empty section after Render Hide is disabled.
 - Piston extension and retraction, including body and head
 - A filtered and an unfiltered carried block
 - Normal and sticky pistons
+- Item frames with empty, item, and map contents
 - Fabric renderer with and without Sodium

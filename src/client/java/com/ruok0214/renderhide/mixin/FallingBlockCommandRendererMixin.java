@@ -15,6 +15,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
@@ -35,6 +36,21 @@ abstract class FallingBlockCommandRendererMixin {
         MovingBlockRenderState state = original.call(submit);
         this.renderhide$currentMovingState.set(state);
         return state;
+    }
+
+    @ModifyArg(
+            method = "buildGroup",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/renderer/block/ModelBlockRenderer;<init>(ZZLnet/minecraft/client/color/block/BlockColors;)V"
+            ),
+            index = 1
+    )
+    private boolean renderhide$cullAdjacentMovingFaces(boolean original) {
+        // MovingBlockRenderStateMixin supplies adjacent moving states for translucent
+        // piston blocks. Vanilla disables face culling here, which otherwise leaves
+        // the shared face visible and makes two fading concrete blocks overlap darkly.
+        return true;
     }
 
     @ModifyExpressionValue(
