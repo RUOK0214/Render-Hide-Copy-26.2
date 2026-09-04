@@ -1022,9 +1022,13 @@ public final class RegionManager {
 
     public static void refreshAll() {
         Minecraft client = Minecraft.getInstance();
-        if (client.level != null && client.levelRenderer != null) {
-            client.levelRenderer.invalidateCompiledGeometry(client.level, client.options,
-                    client.gameRenderer.mainCamera(), client.getBlockColors());
+        if (client.level != null && client.levelExtractor != null) {
+            // In 26.2 this is the public entry point for a full renderer reload.
+            // Calling LevelRenderer#invalidateCompiledGeometry directly rebuilds
+            // renderer objects, but skips LevelExtractor's section update tracker.
+            // That leaves already compiled hidden/transparent meshes cached after
+            // filters change or render hiding is disabled.
+            client.levelExtractor.allChanged();
         }
     }
 
