@@ -30,7 +30,7 @@ dependencies {
     compileOnly "maven.modrinth:sodium:mc26.2-0.9.1-fabric"
 }
 
-processResources {
+tasks.withType(ProcessResources).configureEach {
     inputs.property 'version', project.version
     filesMatching('fabric.mod.json') {
         expand version: project.version
