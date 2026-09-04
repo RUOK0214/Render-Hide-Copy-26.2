@@ -1,7 +1,8 @@
 # Render Hide 2.5.0-alpha.1 — Minecraft 26.2 port
 
-Transparency rework based on the supplied `render-hide-1.21.11-2.4.5`
-release JAR. This repository ports that exact behavior to Minecraft 26.2.
+Port based on the supplied `render-hide-1.21.11-2.5.0-alpha.1.jar` and its
+matching source revision. This repository ports that exact behavior to
+Minecraft 26.2.
 The original filtering, entity handling, lighting, GUI, commands, keybindings,
 selection outlines, and opacity rules remain the baseline.
 
@@ -11,6 +12,7 @@ selection outlines, and opacity rules remain the baseline.
 - Minecraft 26.2
 - Fabric Loader 0.19.3 or newer
 - Fabric API 0.158.0+26.2 or newer
+- Sodium 0.9.1 for Minecraft 26.2 (optional)
 
 ## Build
 
@@ -20,9 +22,8 @@ selection outlines, and opacity rules remain the baseline.
 
 The built mod JAR is created in `build/libs`.
 
-The supplied release JAR used Fabric intermediary names. The port keeps those
-references where Minecraft 26.2 still exposes the same intermediary API and
-updates changed APIs explicitly.
+The 26.2 port uses the current named Minecraft APIs and carries separate,
+optional Sodium rendering hooks.
 
 See `docs/TRANSPARENCY_ARCHITECTURE.md` for renderer boundaries and the
 required validation matrix.
