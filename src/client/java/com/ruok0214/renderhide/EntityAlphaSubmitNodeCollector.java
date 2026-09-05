@@ -140,11 +140,14 @@ class EntityAlphaOrderedSubmitNodeCollector implements OrderedSubmitNodeCollecto
                             poseStack.last().copy(), translucentType,
                             parts, tints, light, overlay,
                             this.alphaMultiplier, null);
-            ((FabricOrderedSubmitNodeCollector) this.delegate).submitCustom(
-                    usesForwardZOffset(renderType)
-                            ? SubmitRenderPhases.AFTER_TERRAIN
-                            : SubmitRenderPhases.TRANSLUCENT_BLOCKS_AND_ITEMS,
-                    submit);
+            FabricOrderedSubmitNodeCollector fabricDelegate =
+                    (FabricOrderedSubmitNodeCollector) this.delegate;
+            if (usesForwardZOffset(renderType)) {
+                fabricDelegate.submitCustom(SubmitRenderPhases.AFTER_TERRAIN, submit);
+            } else {
+                fabricDelegate.submitCustom(
+                        SubmitRenderPhases.TRANSLUCENT_BLOCKS_AND_ITEMS, submit);
+            }
             if (outlineColor != 0) {
                 this.delegate.submitBlockModel(poseStack,
                         RenderTypes.outline(
