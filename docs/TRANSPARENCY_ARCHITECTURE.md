@@ -71,6 +71,9 @@ submit-phase API. They target the main framebuffer so a later cross-target depth
 composite cannot cover them again; their original pose, tint, light, overlay,
 outline, and forward Z layering are preserved. A small local positive-Z offset
 keeps thin flush-mounted bodies in front of the supporting surface's depth.
+Forward-offset frame submissions are detected by the concrete
+`ENTITY_SOLID_Z_OFFSET_FORWARD` pipeline; inspecting copied render-state fields
+alone is not reliable enough to select this path on Minecraft 26.2.
 
 Changing vertex alpha without moving an opaque block to a translucent layer is
 not sufficient. Likewise, changing a layer after a face or model was removed is

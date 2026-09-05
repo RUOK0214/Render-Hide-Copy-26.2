@@ -339,6 +339,9 @@ class EntityAlphaOrderedSubmitNodeCollector implements OrderedSubmitNodeCollecto
         }
 
         private static boolean usesForwardZOffset(RenderType renderType) {
+            if (renderType.pipeline() == RenderPipelines.ENTITY_SOLID_Z_OFFSET_FORWARD) {
+                return true;
+            }
             RenderSetup setup = ((RenderTypeAccessor) (Object) renderType)
                     .renderhide$getState();
             return ((RenderSetupAccessor) (Object) setup)

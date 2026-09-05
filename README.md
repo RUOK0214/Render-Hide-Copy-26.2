@@ -1,4 +1,4 @@
-# Render Hide 2.5.0-alpha.14 — Minecraft 26.2 port
+# Render Hide 2.5.0-alpha.15 — Minecraft 26.2 port
 
 Port based on the supplied `render-hide-1.21.11-2.5.0-alpha.1.jar` and its
 matching source revision. This repository ports that exact behavior to
@@ -63,6 +63,12 @@ toward the visible side before its post-terrain draw. This prevents the support
 surface's existing depth value from rejecting the thin frame body. One-time
 submission and execution diagnostics are also written to the game log so this
 path can be distinguished from an earlier pipeline failure.
+
+Alpha.15 identifies the item-frame body's exact
+`ENTITY_SOLID_Z_OFFSET_FORWARD` pipeline directly. The earlier indirect
+layering-state comparison did not recognize this submission, so the intended
+post-terrain item-frame path was never entered despite the body being submitted
+normally. The layering comparison remains only as a compatibility fallback.
 
 ## Requirements
 
