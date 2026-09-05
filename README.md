@@ -1,4 +1,4 @@
-# Render Hide 2.5.0-alpha.7 — Minecraft 26.2 port
+# Render Hide 2.5.0-alpha.8 — Minecraft 26.2 port
 
 Port based on the supplied `render-hide-1.21.11-2.5.0-alpha.1.jar` and its
 matching source revision. This repository ports that exact behavior to
@@ -26,6 +26,11 @@ Alpha.7 supplies neighbouring moving states to the culling pass for both
 translucent and visible-filter blocks, stops exposing internal filter boundaries
 at partial opacity, and submits the item-frame body through the proven item-quad
 path while retaining its forward Z offset.
+
+Alpha.8 uses Minecraft's standard translucent item render type for the
+item-frame body—the same proven path as the displayed item—and applies a small
+geometry offset toward the camera-facing side so the frame cannot disappear
+into the supporting block's depth surface.
 
 ## Requirements
 

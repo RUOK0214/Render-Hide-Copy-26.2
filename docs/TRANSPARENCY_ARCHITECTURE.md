@@ -41,7 +41,7 @@ The same decision is used everywhere:
   `SodiumBlockOcclusionMixin`, `SodiumVirtualLightMixin`,
   `SodiumLightPipelineMixin`
 - Entities: `EntityRenderManagerMixin`, `EntityRenderStateMixin`,
-  `EntityAlphaSubmitNodeCollector`
+  `EntityAlphaSubmitNodeCollector`, `ItemFrameRendererMixin`
 
 Moving render states normally report AIR for every neighbouring position.
 Render Hide supplies the states of adjacent piston-moved blocks for every
@@ -57,8 +57,11 @@ neighbour creates the dark filter seam this design avoids.
 Entity renderers may submit block models as well as ordinary entity models.
 The item-frame body is one such block model: its quads are flattened into the
 same item feature path used by the displayed item, untinted quads receive a
-generated alpha tint, and a translucent forward-Z-offset render type keeps the
-frame above its supporting block.
+generated alpha tint, and Minecraft's standard translucent item render type is
+used for both parts. Because flattening removes the block model's render-type
+depth transform, the frame body geometry receives a 1/64-block local forward
+offset so it stays above the supporting block without changing the displayed
+item's position.
 
 Changing vertex alpha without moving an opaque block to a translucent layer is
 not sufficient. Likewise, changing a layer after a face or model was removed is

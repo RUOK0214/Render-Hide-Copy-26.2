@@ -10,6 +10,7 @@
     "FallingBlockCommandRendererMixin",
     "IndigoAoCalculatorMixin",
     "IndigoTerrainRendererMixin",
+    "ItemFrameRendererMixin",
     "MovingBlockRenderStateMixin",
     "MovingBlockSubmissionMixin",
     "PistonBlockEntityRendererMixin",

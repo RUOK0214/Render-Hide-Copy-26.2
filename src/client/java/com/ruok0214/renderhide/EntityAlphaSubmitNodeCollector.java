@@ -139,8 +139,8 @@ class EntityAlphaOrderedSubmitNodeCollector implements OrderedSubmitNodeCollecto
             }
             adjustedTints[alphaTintIndex] = this.alphaMultiplier;
 
-            RenderType translucentType = translucentEntityType(renderType);
             if (usesForwardZOffset(renderType)) {
+                RenderType translucentType = translucentItemType(renderType);
                 this.delegate.submitItem(poseStack, ItemDisplayContext.FIXED,
                         light, overlay, outlineColor, adjustedTints,
                         alphaItemQuads(parts, alphaTintIndex, translucentType),
@@ -148,6 +148,7 @@ class EntityAlphaOrderedSubmitNodeCollector implements OrderedSubmitNodeCollecto
                 return;
             }
 
+            RenderType translucentType = translucentEntityType(renderType);
             this.delegate.submitBlockModel(poseStack, translucentType,
                     alphaBlockModelParts(parts, alphaTintIndex), adjustedTints,
                     light, overlay, outlineColor);
