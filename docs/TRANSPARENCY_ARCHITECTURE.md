@@ -56,13 +56,14 @@ neighbour creates the dark filter seam this design avoids.
 
 Entity renderers may submit block models as well as ordinary entity models.
 The item-frame body stays a block-model feature submission while its displayed
-content stays an item-feature submission. The body receives a generated alpha
-tint and a translucent entity render type targeting the item/entity composite,
-while preserving the vanilla forward Z layering. Keeping the original
-submission kind is required because Minecraft 26.2 computes translucent
-block-model distance from the model centre but item distance from the pose
-origin; flattening the body after its -0.5 translation sorts it from the wrong
-point.
+content stays an item-feature submission. The body keeps its original model
+parts and tint layers; opacity is supplied as the block-model submission's base
+tint color and multiplied by Minecraft's feature renderer. Its translucent
+entity render type still targets the item/entity composite and preserves the
+vanilla forward Z layering. Keeping the original submission kind is required
+because Minecraft 26.2 computes translucent block-model distance from the model
+centre but item distance from the pose origin; flattening the body after its
+-0.5 translation sorts it from the wrong point.
 
 Minecraft 26.2 renders translucent entity features before translucent terrain.
 For flush-mounted models this lets the supporting translucent block cover the

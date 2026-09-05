@@ -30,8 +30,6 @@ import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.state.level.QuadParticleRenderState;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.geometry.BakedQuad;
-import net.minecraft.client.resources.model.sprite.Material;
-import net.minecraft.core.Direction;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.FormattedCharSequence;
@@ -136,37 +134,24 @@ class EntityAlphaOrderedSubmitNodeCollector implements OrderedSubmitNodeCollecto
         public void submitBlockModel(PoseStack poseStack, RenderType renderType,
                 List<BlockStateModelPart> parts, int[] tints, int light, int overlay,
                 int outlineColor) {
-            int alphaTintIndex = tints.length;
-            int[] adjustedTints = Arrays.copyOf(tints, tints.length + 1);
-            for (int i = 0; i < tints.length; i++) {
-                adjustedTints[i] = color(tints[i]);
-            }
-            adjustedTints[alphaTintIndex] = this.alphaMultiplier;
-
             RenderType translucentType = translucentEntityType(renderType);
-            List<BlockStateModelPart> adjustedParts =
-                    alphaBlockModelParts(parts, alphaTintIndex);
-            if (usesForwardZOffset(renderType)) {
-                BlockModelFeatureRenderer.Submit submit =
-                        new BlockModelFeatureRenderer.Submit(
-                                poseStack.last().copy(), translucentType,
-                                adjustedParts, adjustedTints, light, overlay,
-                                -1, null);
-                ((FabricOrderedSubmitNodeCollector) this.delegate).submitCustom(
-                        SubmitRenderPhases.AFTER_TERRAIN, submit);
-                if (outlineColor != 0) {
-                    this.delegate.submitBlockModel(poseStack,
-                            RenderTypes.outline(
-                                    net.minecraft.client.renderer.texture.TextureAtlas
-                                            .LOCATION_BLOCKS),
-                            adjustedParts, adjustedTints, light, overlay,
-                            outlineColor);
-                }
-                return;
+            BlockModelFeatureRenderer.Submit submit =
+                    new BlockModelFeatureRenderer.Submit(
+                            poseStack.last().copy(), translucentType,
+                            parts, tints, light, overlay,
+                            this.alphaMultiplier, null);
+            ((FabricOrderedSubmitNodeCollector) this.delegate).submitCustom(
+                    usesForwardZOffset(renderType)
+                            ? SubmitRenderPhases.AFTER_TERRAIN
+                            : SubmitRenderPhases.TRANSLUCENT_BLOCKS_AND_ITEMS,
+                    submit);
+            if (outlineColor != 0) {
+                this.delegate.submitBlockModel(poseStack,
+                        RenderTypes.outline(
+                                net.minecraft.client.renderer.texture.TextureAtlas
+                                        .LOCATION_BLOCKS),
+                        parts, tints, light, overlay, outlineColor);
             }
-            this.delegate.submitBlockModel(poseStack, translucentType,
-                    adjustedParts, adjustedTints,
-                    light, overlay, outlineColor);
         }
 
         @Override
@@ -282,61 +267,6 @@ class EntityAlphaOrderedSubmitNodeCollector implements OrderedSubmitNodeCollecto
             return ((RenderSetupAccessor) (Object) setup)
                     .renderhide$getLayeringTransform()
                     == LayeringTransform.VIEW_OFFSET_Z_LAYERING_FORWARD;
-        }
-
-        private static List<BlockStateModelPart> alphaBlockModelParts(
-                List<BlockStateModelPart> parts, int alphaTintIndex) {
-            List<BlockStateModelPart> adjusted = new ArrayList<>(parts.size());
-            for (BlockStateModelPart part : parts) {
-                adjusted.add(new AlphaBlockStateModelPart(part, alphaTintIndex));
-            }
-            return adjusted;
-        }
-
-        private static BakedQuad withAlphaTint(BakedQuad quad, int alphaTintIndex) {
-            BakedQuad.MaterialInfo material = quad.materialInfo();
-            if (material.isTinted()) {
-                return quad;
-            }
-            BakedQuad.MaterialInfo adjustedMaterial = new BakedQuad.MaterialInfo(
-                    material.sprite(), material.layer(), material.itemRenderType(),
-                    alphaTintIndex, material.shade(), material.lightEmission());
-            return new BakedQuad(
-                    quad.position0(), quad.position1(), quad.position2(), quad.position3(),
-                    quad.packedUV0(), quad.packedUV1(), quad.packedUV2(), quad.packedUV3(),
-                    quad.direction(), adjustedMaterial);
-        }
-
-        private record AlphaBlockStateModelPart(
-                BlockStateModelPart delegate, int alphaTintIndex)
-                implements BlockStateModelPart {
-            @Override
-            public List<BakedQuad> getQuads(Direction direction) {
-                List<BakedQuad> quads = this.delegate.getQuads(direction);
-                if (quads.isEmpty()) {
-                    return quads;
-                }
-                List<BakedQuad> adjusted = new ArrayList<>(quads.size());
-                for (BakedQuad quad : quads) {
-                    adjusted.add(withAlphaTint(quad, this.alphaTintIndex));
-                }
-                return adjusted;
-            }
-
-            @Override
-            public boolean useAmbientOcclusion() {
-                return this.delegate.useAmbientOcclusion();
-            }
-
-            @Override
-            public Material.Baked particleMaterial() {
-                return this.delegate.particleMaterial();
-            }
-
-            @Override
-            public int materialFlags() {
-                return this.delegate.materialFlags();
-            }
         }
 
         private static RenderType translucentItemType(RenderType original) {
