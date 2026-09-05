@@ -69,7 +69,8 @@ entity block models are therefore queued as custom features and their original
 baked quads are emitted from the post-terrain phase through Fabric's
 submit-phase API. They target the main framebuffer so a later cross-target depth
 composite cannot cover them again; their original pose, tint, light, overlay,
-outline, and forward Z layering are preserved.
+outline, and forward Z layering are preserved. A small local positive-Z offset
+keeps thin flush-mounted bodies in front of the supporting surface's depth.
 
 Changing vertex alpha without moving an opaque block to a translucent layer is
 not sufficient. Likewise, changing a layer after a face or model was removed is

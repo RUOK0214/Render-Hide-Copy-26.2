@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import net.fabricmc.fabric.api.client.rendering.v1.FabricOrderedSubmitNodeCollector;
 import net.fabricmc.fabric.api.client.rendering.v1.SubmitRenderPhases;
 import net.minecraft.client.gui.Font;
@@ -64,6 +65,9 @@ public final class EntityAlphaSubmitNodeCollector extends EntityAlphaOrderedSubm
 
 class EntityAlphaOrderedSubmitNodeCollector implements OrderedSubmitNodeCollector {
         private static final Direction[] DIRECTIONS = Direction.values();
+        private static final AtomicBoolean LOGGED_FORWARD_SUBMISSION = new AtomicBoolean();
+        private static final AtomicBoolean LOGGED_FORWARD_RENDER = new AtomicBoolean();
+        private static final float ITEM_FRAME_DEPTH_OFFSET = 1.0F / 32.0F;
         private static final Map<Identifier, RenderType>
                 TRANSLUCENT_Z_OFFSET_FORWARD_TYPES = new ConcurrentHashMap<>();
 
@@ -146,12 +150,26 @@ class EntityAlphaOrderedSubmitNodeCollector implements OrderedSubmitNodeCollecto
                 List<BlockStateModelPart> copiedParts = List.copyOf(parts);
                 int[] copiedTints = Arrays.copyOf(tints, tints.length);
                 int baseColor = this.alphaMultiplier;
+                PoseStack.Pose framePose = poseStack.last().copy();
+                framePose.pose().translate(0.0F, 0.0F, ITEM_FRAME_DEPTH_OFFSET);
+                int quadCount = countBlockModelQuads(copiedParts);
+                if (LOGGED_FORWARD_SUBMISSION.compareAndSet(false, true)) {
+                    RenderHideClient.LOGGER.info(
+                            "Render Hide alpha.14: queued forward block model: {} parts, {} quads, opacity {}",
+                            copiedParts.size(), quadCount, this.opacity);
+                }
                 CustomFeatureRenderer.Submit submit =
                         new CustomFeatureRenderer.Submit(
-                                poseStack.last().copy(), translucentType,
-                                (pose, consumer) -> renderBlockModelQuads(
-                                        pose, copiedParts, copiedTints,
-                                        light, overlay, baseColor, consumer));
+                                framePose, translucentType,
+                                (pose, consumer) -> {
+                                    if (LOGGED_FORWARD_RENDER.compareAndSet(false, true)) {
+                                        RenderHideClient.LOGGER.info(
+                                                "Render Hide alpha.14: rendering forward block model: {} quads",
+                                                quadCount);
+                                    }
+                                    renderBlockModelQuads(pose, copiedParts, copiedTints,
+                                            light, overlay, baseColor, consumer);
+                                });
                 fabricDelegate.submitCustom(SubmitRenderPhases.AFTER_TERRAIN, submit);
             } else {
                 BlockModelFeatureRenderer.Submit submit =
@@ -189,6 +207,17 @@ class EntityAlphaOrderedSubmitNodeCollector implements OrderedSubmitNodeCollecto
                             instance, consumer);
                 }
             }
+        }
+
+        private static int countBlockModelQuads(List<BlockStateModelPart> parts) {
+            int count = 0;
+            for (BlockStateModelPart part : parts) {
+                for (Direction direction : DIRECTIONS) {
+                    count += part.getQuads(direction).size();
+                }
+                count += part.getQuads(null).size();
+            }
+            return count;
         }
 
         private static void putBlockModelQuad(PoseStack.Pose pose, BakedQuad quad,
