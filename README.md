@@ -1,4 +1,4 @@
-# Render Hide 2.5.0-alpha.9 — Minecraft 26.2 port
+# Render Hide 2.5.0-alpha.10 — Minecraft 26.2 port
 
 Port based on the supplied `render-hide-1.21.11-2.5.0-alpha.1.jar` and its
 matching source revision. This repository ports that exact behavior to
@@ -36,6 +36,11 @@ Alpha.9 keeps the item-frame body in its native block-model submission path so
 Minecraft 26.2 computes translucent distance from the model centre. Its
 translucent entity render type now targets the block-and-item composite while
 retaining the vanilla forward Z layering.
+
+Alpha.10 defers flush-mounted translucent entity block models such as the item
+frame body until after translucent terrain. This prevents the supporting block,
+which Minecraft 26.2 normally draws later, from covering the frame while its
+displayed item remains visible.
 
 ## Requirements
 

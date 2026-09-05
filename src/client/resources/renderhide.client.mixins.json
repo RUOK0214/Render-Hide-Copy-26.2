@@ -8,6 +8,7 @@
     "EntityRenderManagerMixin",
     "EntityRenderStateMixin",
     "FallingBlockCommandRendererMixin",
+    "FeatureRenderDispatcherMixin",
     "IndigoAoCalculatorMixin",
     "IndigoTerrainRendererMixin",
     "MovingBlockRenderStateMixin",

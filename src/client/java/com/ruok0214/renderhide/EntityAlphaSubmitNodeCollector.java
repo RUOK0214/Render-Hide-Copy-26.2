@@ -141,8 +141,16 @@ class EntityAlphaOrderedSubmitNodeCollector implements OrderedSubmitNodeCollecto
             adjustedTints[alphaTintIndex] = this.alphaMultiplier;
 
             RenderType translucentType = translucentEntityType(renderType);
+            List<BlockStateModelPart> adjustedParts =
+                    alphaBlockModelParts(parts, alphaTintIndex);
+            if (usesForwardZOffset(renderType)) {
+                DeferredEntityBlockRenderer.submit(poseStack.last().copy(),
+                        translucentType, adjustedParts, adjustedTints,
+                        light, overlay, outlineColor);
+                return;
+            }
             this.delegate.submitBlockModel(poseStack, translucentType,
-                    alphaBlockModelParts(parts, alphaTintIndex), adjustedTints,
+                    adjustedParts, adjustedTints,
                     light, overlay, outlineColor);
         }
 
@@ -251,6 +259,14 @@ class EntityAlphaOrderedSubmitNodeCollector implements OrderedSubmitNodeCollecto
                 return RenderTypeAccessor.renderhide$create(
                         "renderhide_entity_translucent_z_offset_forward", setup);
             });
+        }
+
+        private static boolean usesForwardZOffset(RenderType renderType) {
+            RenderSetup setup = ((RenderTypeAccessor) (Object) renderType)
+                    .renderhide$getState();
+            return ((RenderSetupAccessor) (Object) setup)
+                    .renderhide$getLayeringTransform()
+                    == LayeringTransform.VIEW_OFFSET_Z_LAYERING_FORWARD;
         }
 
         private static List<BlockStateModelPart> alphaBlockModelParts(

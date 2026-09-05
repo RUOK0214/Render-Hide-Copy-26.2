@@ -41,7 +41,8 @@ The same decision is used everywhere:
   `SodiumBlockOcclusionMixin`, `SodiumVirtualLightMixin`,
   `SodiumLightPipelineMixin`
 - Entities: `EntityRenderManagerMixin`, `EntityRenderStateMixin`,
-  `EntityAlphaSubmitNodeCollector`
+  `EntityAlphaSubmitNodeCollector`, `DeferredEntityBlockRenderer`,
+  `FeatureRenderDispatcherMixin`
 
 Moving render states normally report AIR for every neighbouring position.
 Render Hide supplies the states of adjacent piston-moved blocks for every
@@ -63,6 +64,13 @@ submission kind is required because Minecraft 26.2 computes translucent
 block-model distance from the model centre but item distance from the pose
 origin; flattening the body after its -0.5 translation sorts it from the wrong
 point.
+
+Minecraft 26.2 renders translucent entity features before translucent terrain.
+For flush-mounted models this lets the supporting translucent block cover the
+feature even when both have correct alpha and depth settings. Forward-offset
+entity block models are therefore queued and emitted from the post-terrain
+feature phase; their original pose, block-model quads, tint, light, overlay,
+outline, and forward Z layering are preserved.
 
 Changing vertex alpha without moving an opaque block to a translucent layer is
 not sufficient. Likewise, changing a layer after a face or model was removed is
