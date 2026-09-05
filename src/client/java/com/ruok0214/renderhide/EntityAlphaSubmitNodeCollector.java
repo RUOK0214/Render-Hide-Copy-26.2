@@ -6,6 +6,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import net.fabricmc.fabric.api.client.rendering.v1.FabricOrderedSubmitNodeCollector;
+import net.fabricmc.fabric.api.client.rendering.v1.SubmitRenderPhases;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.model.Model;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -15,6 +17,7 @@ import net.minecraft.client.renderer.block.MovingBlockRenderState;
 import net.minecraft.client.renderer.block.dispatch.BlockStateModelPart;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
+import net.minecraft.client.renderer.feature.BlockModelFeatureRenderer;
 import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
 import net.minecraft.client.renderer.gizmos.DrawableGizmoPrimitives;
 import net.minecraft.client.renderer.item.ItemStackRenderState;
@@ -144,9 +147,21 @@ class EntityAlphaOrderedSubmitNodeCollector implements OrderedSubmitNodeCollecto
             List<BlockStateModelPart> adjustedParts =
                     alphaBlockModelParts(parts, alphaTintIndex);
             if (usesForwardZOffset(renderType)) {
-                DeferredEntityBlockRenderer.submit(poseStack.last().copy(),
-                        translucentType, adjustedParts, adjustedTints,
-                        light, overlay, outlineColor);
+                BlockModelFeatureRenderer.Submit submit =
+                        new BlockModelFeatureRenderer.Submit(
+                                poseStack.last().copy(), translucentType,
+                                adjustedParts, adjustedTints, light, overlay,
+                                -1, null);
+                ((FabricOrderedSubmitNodeCollector) this.delegate).submitCustom(
+                        SubmitRenderPhases.AFTER_TERRAIN, submit);
+                if (outlineColor != 0) {
+                    this.delegate.submitBlockModel(poseStack,
+                            RenderTypes.outline(
+                                    net.minecraft.client.renderer.texture.TextureAtlas
+                                            .LOCATION_BLOCKS),
+                            adjustedParts, adjustedTints, light, overlay,
+                            outlineColor);
+                }
                 return;
             }
             this.delegate.submitBlockModel(poseStack, translucentType,
