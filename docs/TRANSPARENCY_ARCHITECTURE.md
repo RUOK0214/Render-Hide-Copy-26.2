@@ -55,24 +55,21 @@ neighbour is fully skipped at 0%; exposing them beside a partially transparent
 neighbour creates the dark filter seam this design avoids.
 
 Entity renderers may submit block models as well as ordinary entity models.
-The item-frame body stays a block-model feature submission while its displayed
-content stays an item-feature submission. The body keeps its original model
-parts and tint layers; opacity is supplied as the block-model submission's base
-tint color and multiplied by Minecraft's feature renderer. Its translucent
-entity render type targets the main framebuffer and preserves the vanilla
-forward Z layering. Keeping the original submission kind is required
-because Minecraft 26.2 computes translucent block-model distance from the model
-centre but item distance from the pose origin; flattening the body after its
--0.5 translation sorts it from the wrong point.
+The item-frame's displayed content stays an item-feature submission. At partial
+opacity, its body bypasses the block-model feature batch and a custom feature
+emits the original `BlockStateModelPart` baked quads directly. This preserves
+resource-pack geometry, tint layers, light, overlay, and the vanilla forward Z
+layering without reconstructing the frame or routing it through the item model
+path. At full opacity the renderer is left completely vanilla.
 
 Minecraft 26.2 renders translucent entity features before translucent terrain.
 For flush-mounted models this lets the supporting translucent block cover the
 feature even when both have correct alpha and depth settings. Forward-offset
-entity block models are therefore queued and emitted from the post-terrain
-feature phase through Fabric's submit-phase API. They target the main
-framebuffer so a later cross-target depth composite cannot cover them again;
-their original pose, block-model quads, tint, light, overlay, outline, and
-forward Z layering are preserved.
+entity block models are therefore queued as custom features and their original
+baked quads are emitted from the post-terrain phase through Fabric's
+submit-phase API. They target the main framebuffer so a later cross-target depth
+composite cannot cover them again; their original pose, tint, light, overlay,
+outline, and forward Z layering are preserved.
 
 Changing vertex alpha without moving an opaque block to a translucent layer is
 not sufficient. Likewise, changing a layer after a face or model was removed is

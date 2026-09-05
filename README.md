@@ -1,4 +1,4 @@
-# Render Hide 2.5.0-alpha.12 — Minecraft 26.2 port
+# Render Hide 2.5.0-alpha.13 — Minecraft 26.2 port
 
 Port based on the supplied `render-hide-1.21.11-2.5.0-alpha.1.jar` and its
 matching source revision. This repository ports that exact behavior to
@@ -51,6 +51,12 @@ Alpha.12 draws the post-terrain item-frame body directly into the main target.
 This prevents the later depth-based transparency composite from placing the
 supporting translucent block over the frame even though the frame submission
 itself was executed after terrain.
+
+Alpha.13 bypasses Minecraft's block-model feature batch for forward-offset
+entity models. The item-frame body is now emitted from its original baked model
+quads by a post-terrain custom feature, preserving resource-pack geometry,
+tints, light, overlay, and the vanilla forward Z offset while avoiding the
+feature batch that continued to discard the frame at partial opacity.
 
 ## Requirements
 

@@ -1,6 +1,8 @@
 package com.ruok0214.renderhide;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.QuadInstance;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -18,6 +20,7 @@ import net.minecraft.client.renderer.block.dispatch.BlockStateModelPart;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.client.renderer.feature.BlockModelFeatureRenderer;
+import net.minecraft.client.renderer.feature.CustomFeatureRenderer;
 import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
 import net.minecraft.client.renderer.gizmos.DrawableGizmoPrimitives;
 import net.minecraft.client.renderer.item.ItemStackRenderState;
@@ -30,6 +33,7 @@ import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.state.level.QuadParticleRenderState;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.geometry.BakedQuad;
+import net.minecraft.core.Direction;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.FormattedCharSequence;
@@ -59,6 +63,7 @@ public final class EntityAlphaSubmitNodeCollector extends EntityAlphaOrderedSubm
 }
 
 class EntityAlphaOrderedSubmitNodeCollector implements OrderedSubmitNodeCollector {
+        private static final Direction[] DIRECTIONS = Direction.values();
         private static final Map<Identifier, RenderType>
                 TRANSLUCENT_Z_OFFSET_FORWARD_TYPES = new ConcurrentHashMap<>();
 
@@ -135,16 +140,25 @@ class EntityAlphaOrderedSubmitNodeCollector implements OrderedSubmitNodeCollecto
                 List<BlockStateModelPart> parts, int[] tints, int light, int overlay,
                 int outlineColor) {
             RenderType translucentType = translucentEntityType(renderType);
-            BlockModelFeatureRenderer.Submit submit =
-                    new BlockModelFeatureRenderer.Submit(
-                            poseStack.last().copy(), translucentType,
-                            parts, tints, light, overlay,
-                            this.alphaMultiplier, null);
             FabricOrderedSubmitNodeCollector fabricDelegate =
                     (FabricOrderedSubmitNodeCollector) this.delegate;
             if (usesForwardZOffset(renderType)) {
+                List<BlockStateModelPart> copiedParts = List.copyOf(parts);
+                int[] copiedTints = Arrays.copyOf(tints, tints.length);
+                int baseColor = this.alphaMultiplier;
+                CustomFeatureRenderer.Submit submit =
+                        new CustomFeatureRenderer.Submit(
+                                poseStack.last().copy(), translucentType,
+                                (pose, consumer) -> renderBlockModelQuads(
+                                        pose, copiedParts, copiedTints,
+                                        light, overlay, baseColor, consumer));
                 fabricDelegate.submitCustom(SubmitRenderPhases.AFTER_TERRAIN, submit);
             } else {
+                BlockModelFeatureRenderer.Submit submit =
+                        new BlockModelFeatureRenderer.Submit(
+                                poseStack.last().copy(), translucentType,
+                                parts, tints, light, overlay,
+                                this.alphaMultiplier, null);
                 fabricDelegate.submitCustom(
                         SubmitRenderPhases.TRANSLUCENT_BLOCKS_AND_ITEMS, submit);
             }
@@ -155,6 +169,37 @@ class EntityAlphaOrderedSubmitNodeCollector implements OrderedSubmitNodeCollecto
                                         .LOCATION_BLOCKS),
                         parts, tints, light, overlay, outlineColor);
             }
+        }
+
+        private static void renderBlockModelQuads(PoseStack.Pose pose,
+                List<BlockStateModelPart> parts, int[] tints, int light, int overlay,
+                int baseColor, VertexConsumer consumer) {
+            QuadInstance instance = new QuadInstance();
+            instance.setLightCoords(light);
+            instance.setOverlayCoords(overlay);
+            for (BlockStateModelPart part : parts) {
+                for (Direction direction : DIRECTIONS) {
+                    for (BakedQuad quad : part.getQuads(direction)) {
+                        putBlockModelQuad(pose, quad, tints, baseColor,
+                                instance, consumer);
+                    }
+                }
+                for (BakedQuad quad : part.getQuads(null)) {
+                    putBlockModelQuad(pose, quad, tints, baseColor,
+                            instance, consumer);
+                }
+            }
+        }
+
+        private static void putBlockModelQuad(PoseStack.Pose pose, BakedQuad quad,
+                int[] tints, int baseColor, QuadInstance instance,
+                VertexConsumer consumer) {
+            int tintIndex = quad.materialInfo().tintIndex();
+            boolean usesTint = tintIndex != -1 && tintIndex < tints.length;
+            instance.setColor(usesTint
+                    ? ARGB.multiply(baseColor, tints[tintIndex])
+                    : baseColor);
+            consumer.putBakedQuad(pose, quad, instance);
         }
 
         @Override
