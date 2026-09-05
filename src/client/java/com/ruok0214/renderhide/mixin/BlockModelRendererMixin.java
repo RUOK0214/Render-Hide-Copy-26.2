@@ -41,16 +41,18 @@ abstract class BlockModelRendererMixin {
     private void renderhide$exposeBoundary(BlockAndTintGetter world, BlockState state,
             Direction direction, BlockPos neighborPos, CallbackInfoReturnable<Boolean> cir) {
         BlockPos currentPos = neighborPos.relative(direction.getOpposite());
-        boolean currentAffected = RegionManager.affectsOcclusion(currentPos, state);
+        RegionManager.BlockRenderMode currentMode = RegionManager.blockRenderMode(currentPos, state);
+        RegionManager.BlockRenderMode neighbourMode = RegionManager.blockRenderMode(
+                neighborPos, world.getBlockState(neighborPos));
         if (world instanceof MovingBlockRenderState moving) {
-            float opacity = ((MovingBlockOpacityAccess) moving).renderhide$getOpacity();
-            if (!Float.isNaN(opacity)) {
-                currentAffected = opacity < 1.0F;
+            MovingBlockOpacityAccess access = (MovingBlockOpacityAccess) moving;
+            currentMode = RegionManager.blockRenderMode(access.renderhide$getOpacity(currentPos));
+            float neighbourOpacity = access.renderhide$getOpacity(neighborPos);
+            if (!Float.isNaN(neighbourOpacity)) {
+                neighbourMode = RegionManager.blockRenderMode(neighbourOpacity);
             }
         }
-        if (!currentAffected
-                && RegionManager.isFullyHidden(
-                        neighborPos, world.getBlockState(neighborPos))) {
+        if (RegionManager.shouldExposeFace(currentMode, neighbourMode)) {
             cir.setReturnValue(true);
         }
     }

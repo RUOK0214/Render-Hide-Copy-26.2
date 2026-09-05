@@ -1,6 +1,7 @@
 package com.ruok0214.renderhide;
 
 import net.minecraft.core.Direction;
+import net.minecraft.core.BlockPos;
 
 public interface MovingBlockOpacityAccess {
     float renderhide$getOpacity();
@@ -8,4 +9,6 @@ public interface MovingBlockOpacityAccess {
 
     Direction renderhide$getMovementDirection();
     void renderhide$setMovementDirection(Direction direction);
+
+    float renderhide$getOpacity(BlockPos queryPos);
 }

@@ -57,14 +57,16 @@ abstract class IndigoTerrainRendererMixin {
             net.minecraft.core.Direction direction,
             CallbackInfoReturnable<Boolean> cir) {
         if (direction == null || this.level == null || this.pos == null
-                || this.blockState == null
-                || RegionManager.affectsOcclusion(this.pos, this.blockState)) {
+                || this.blockState == null) {
             return;
         }
 
         BlockPos neighbourPos = this.pos.relative(direction);
-        if (RegionManager.isFullyHidden(
-                neighbourPos, this.level.getBlockState(neighbourPos))) {
+        RegionManager.BlockRenderMode currentMode = RegionManager.blockRenderMode(
+                this.pos, this.blockState);
+        RegionManager.BlockRenderMode neighbourMode = RegionManager.blockRenderMode(
+                neighbourPos, this.level.getBlockState(neighbourPos));
+        if (RegionManager.shouldExposeFace(currentMode, neighbourMode)) {
             cir.setReturnValue(false);
         }
     }

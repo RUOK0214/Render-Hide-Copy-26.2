@@ -40,6 +40,34 @@ abstract class MovingBlockRenderStateMixin implements MovingBlockOpacityAccess {
         renderhide$movementDirection = direction;
     }
 
+    @Override
+    public float renderhide$getOpacity(BlockPos queryPos) {
+        MovingBlockRenderState self = (MovingBlockRenderState) (Object) this;
+        if (queryPos.equals(self.blockPos)) {
+            return renderhide$opacity;
+        }
+        if (renderhide$movementDirection == null) {
+            return Float.NaN;
+        }
+
+        Minecraft client = Minecraft.getInstance();
+        if (client.level == null) {
+            return Float.NaN;
+        }
+        BlockPos movingEntityPos = queryPos.relative(renderhide$movementDirection);
+        BlockEntity blockEntity = client.level.getBlockEntity(movingEntityPos);
+        if (!(blockEntity instanceof PistonMovingBlockEntity piston)
+                || piston.getMovementDirection() != renderhide$movementDirection) {
+            return Float.NaN;
+        }
+        BlockState neighborState = piston.getMovedState();
+        if (neighborState.isAir()) {
+            return Float.NaN;
+        }
+        return RegionManager.movingBlockRenderOpacity(
+                neighborState, piston.getBlockPos(), queryPos, movingEntityPos);
+    }
+
     @Inject(method = "getBlockState", at = @At("HEAD"), cancellable = true, remap = false)
     private void renderhide$includeAdjacentMovingBlock(BlockPos queryPos,
             CallbackInfoReturnable<BlockState> cir) {
@@ -52,27 +80,12 @@ abstract class MovingBlockRenderStateMixin implements MovingBlockOpacityAccess {
             return;
         }
 
-        Minecraft client = Minecraft.getInstance();
-        if (client.level == null) {
-            return;
-        }
-
-        BlockPos movingEntityPos = queryPos.relative(renderhide$movementDirection);
-        BlockEntity blockEntity = client.level.getBlockEntity(movingEntityPos);
-        if (!(blockEntity instanceof PistonMovingBlockEntity piston)
-                || piston.getMovementDirection() != renderhide$movementDirection) {
-            return;
-        }
-
-        BlockState neighborState = piston.getMovedState();
-        if (neighborState.isAir()) {
-            return;
-        }
-
-        float neighborOpacity = RegionManager.movingBlockRenderOpacity(
-                neighborState, piston.getBlockPos(), queryPos, movingEntityPos);
+        float neighborOpacity = renderhide$getOpacity(queryPos);
         if (neighborOpacity > 0.0F) {
-            cir.setReturnValue(neighborState);
+            Minecraft client = Minecraft.getInstance();
+            BlockPos movingEntityPos = queryPos.relative(renderhide$movementDirection);
+            BlockEntity blockEntity = client.level.getBlockEntity(movingEntityPos);
+            cir.setReturnValue(((PistonMovingBlockEntity) blockEntity).getMovedState());
         }
     }
 }

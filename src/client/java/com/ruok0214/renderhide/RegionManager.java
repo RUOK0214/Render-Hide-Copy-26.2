@@ -380,6 +380,25 @@ public final class RegionManager {
                 : BlockRenderMode.TRANSLUCENT;
     }
 
+    public static BlockRenderMode blockRenderMode(float opacity) {
+        if (Float.isNaN(opacity) || opacity >= 1.0f) {
+            return BlockRenderMode.NORMAL;
+        }
+        return opacity <= 0.0f ? BlockRenderMode.SKIP : BlockRenderMode.TRANSLUCENT;
+    }
+
+    /**
+     * Returns true when vanilla occlusion must not discard the current block's
+     * face.  Only one side of a NORMAL/TRANSLUCENT boundary is exposed, which
+     * avoids two coplanar blended faces while keeping the filtered block closed.
+     */
+    public static boolean shouldExposeFace(BlockRenderMode current,
+            BlockRenderMode neighbour) {
+        return current == BlockRenderMode.NORMAL && neighbour != BlockRenderMode.NORMAL
+                || current == BlockRenderMode.TRANSLUCENT
+                        && neighbour == BlockRenderMode.SKIP;
+    }
+
     public static float blockRenderOpacity(BlockPos pos, BlockState state) {
         return switch (RegionManager.blockRenderMode(pos, state)) {
             case NORMAL -> 1.0f;

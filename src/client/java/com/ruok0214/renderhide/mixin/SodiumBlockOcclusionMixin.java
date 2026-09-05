@@ -44,8 +44,9 @@ abstract class SodiumBlockOcclusionMixin {
     private void renderhide$showFaceBesideHiddenNeighbour(Direction class_23502, CallbackInfoReturnable<Boolean> callbackInfoReturnable) {
         BlockPos class_23382 = this.pos.relative(class_23502);
         BlockState class_26802 = this.level.getBlockState(class_23382);
-        if (!RegionManager.affectsOcclusion(this.pos, this.state)
-                && RegionManager.isFullyHidden(class_23382, class_26802)) {
+        RegionManager.BlockRenderMode currentMode = RegionManager.blockRenderMode(this.pos, this.state);
+        RegionManager.BlockRenderMode neighbourMode = RegionManager.blockRenderMode(class_23382, class_26802);
+        if (RegionManager.shouldExposeFace(currentMode, neighbourMode)) {
             callbackInfoReturnable.setReturnValue(true);
         }
     }
