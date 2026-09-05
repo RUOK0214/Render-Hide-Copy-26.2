@@ -251,7 +251,7 @@ class EntityAlphaOrderedSubmitNodeCollector implements OrderedSubmitNodeCollecto
                 RenderSetup setup = RenderSetup.builder(
                                 RenderPipelines.ENTITY_TRANSLUCENT_CULL)
                         .withTexture("Sampler0", location)
-                        .setOutputTarget(OutputTarget.ITEM_ENTITY_TARGET)
+                        .setOutputTarget(OutputTarget.MAIN_TARGET)
                         .useLightmap()
                         .useOverlay()
                         .setLayeringTransform(LayeringTransform.VIEW_OFFSET_Z_LAYERING_FORWARD)

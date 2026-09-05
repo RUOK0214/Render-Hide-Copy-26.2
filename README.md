@@ -1,4 +1,4 @@
-# Render Hide 2.5.0-alpha.11 — Minecraft 26.2 port
+# Render Hide 2.5.0-alpha.12 — Minecraft 26.2 port
 
 Port based on the supplied `render-hide-1.21.11-2.5.0-alpha.1.jar` and its
 matching source revision. This repository ports that exact behavior to
@@ -46,6 +46,11 @@ Alpha.11 keeps the item-frame body's original block-model quads and tint layers
 unchanged. Opacity is applied through Minecraft 26.2's block-model base tint
 color instead, avoiding the material tint-index rewrite that could discard the
 frame body while its separately submitted displayed item remained visible.
+
+Alpha.12 draws the post-terrain item-frame body directly into the main target.
+This prevents the later depth-based transparency composite from placing the
+supporting translucent block over the frame even though the frame submission
+itself was executed after terrain.
 
 ## Requirements
 
