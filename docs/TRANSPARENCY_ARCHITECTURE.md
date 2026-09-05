@@ -54,26 +54,10 @@ had before Render Hide was enabled. Boundary faces are exposed only when the
 neighbour is fully skipped at 0%; exposing them beside a partially transparent
 neighbour creates the dark filter seam this design avoids.
 
-Entity renderers may submit block models as well as ordinary entity models.
-The item-frame's displayed content stays an item-feature submission. At partial
-opacity, its body bypasses the block-model feature batch and a custom feature
-emits the original `BlockStateModelPart` baked quads directly. This preserves
-resource-pack geometry, tint layers, light, overlay, and the vanilla forward Z
-layering without reconstructing the frame or routing it through the item model
-path. At full opacity the renderer is left completely vanilla.
-
-Minecraft 26.2 renders translucent entity features before translucent terrain.
-For flush-mounted models this lets the supporting translucent block cover the
-feature even when both have correct alpha and depth settings. Forward-offset
-entity block models are therefore queued as custom features and their original
-baked quads are emitted from the post-terrain phase through Fabric's
-submit-phase API. They target the main framebuffer so a later cross-target depth
-composite cannot cover them again; their original pose, tint, light, overlay,
-outline, and forward Z layering are preserved. A small local positive-Z offset
-keeps thin flush-mounted bodies in front of the supporting surface's depth.
-Forward-offset frame submissions are detected by the concrete
-`ENTITY_SOLID_Z_OFFSET_FORWARD` pipeline; inspecting copied render-state fields
-alone is not reliable enough to select this path on Minecraft 26.2.
+Entity renderers use the general Alpha.5 opacity wrapper. Block-model features
+are submitted to Minecraft's translucent moving-block render type and their
+existing tint colors receive the opacity multiplier. There is no special-case
+item-frame renderer, geometry replacement, depth offset, or post-terrain phase.
 
 Changing vertex alpha without moving an opaque block to a translucent layer is
 not sufficient. Likewise, changing a layer after a face or model was removed is

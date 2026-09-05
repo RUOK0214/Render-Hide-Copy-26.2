@@ -1,32 +1,21 @@
 package com.ruok0214.renderhide;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.QuadInstance;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-import net.fabricmc.fabric.api.client.rendering.v1.FabricOrderedSubmitNodeCollector;
-import net.fabricmc.fabric.api.client.rendering.v1.SubmitRenderPhases;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.model.Model;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.OrderedSubmitNodeCollector;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.block.MovingBlockRenderState;
 import net.minecraft.client.renderer.block.dispatch.BlockStateModelPart;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
-import net.minecraft.client.renderer.feature.BlockModelFeatureRenderer;
-import net.minecraft.client.renderer.feature.CustomFeatureRenderer;
 import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
 import net.minecraft.client.renderer.gizmos.DrawableGizmoPrimitives;
 import net.minecraft.client.renderer.item.ItemStackRenderState;
-import net.minecraft.client.renderer.rendertype.LayeringTransform;
-import net.minecraft.client.renderer.rendertype.OutputTarget;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
@@ -34,7 +23,6 @@ import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.state.level.QuadParticleRenderState;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.geometry.BakedQuad;
-import net.minecraft.core.Direction;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.FormattedCharSequence;
@@ -64,13 +52,6 @@ public final class EntityAlphaSubmitNodeCollector extends EntityAlphaOrderedSubm
 }
 
 class EntityAlphaOrderedSubmitNodeCollector implements OrderedSubmitNodeCollector {
-        private static final Direction[] DIRECTIONS = Direction.values();
-        private static final AtomicBoolean LOGGED_FORWARD_SUBMISSION = new AtomicBoolean();
-        private static final AtomicBoolean LOGGED_FORWARD_RENDER = new AtomicBoolean();
-        private static final float ITEM_FRAME_DEPTH_OFFSET = 1.0F / 32.0F;
-        private static final Map<Identifier, RenderType>
-                TRANSLUCENT_Z_OFFSET_FORWARD_TYPES = new ConcurrentHashMap<>();
-
         protected final OrderedSubmitNodeCollector delegate;
         protected final float opacity;
         private final int alphaMultiplier;
@@ -84,6 +65,17 @@ class EntityAlphaOrderedSubmitNodeCollector implements OrderedSubmitNodeCollecto
 
         private int color(int original) {
             return ARGB.multiply(original, this.alphaMultiplier);
+        }
+
+        private int[] colors(int[] original) {
+            if (original.length == 0) {
+                return original;
+            }
+            int[] adjusted = original.clone();
+            for (int i = 0; i < adjusted.length; i++) {
+                adjusted[i] = color(adjusted[i]);
+            }
+            return adjusted;
         }
 
         @Override
@@ -143,92 +135,8 @@ class EntityAlphaOrderedSubmitNodeCollector implements OrderedSubmitNodeCollecto
         public void submitBlockModel(PoseStack poseStack, RenderType renderType,
                 List<BlockStateModelPart> parts, int[] tints, int light, int overlay,
                 int outlineColor) {
-            RenderType translucentType = translucentEntityType(renderType);
-            FabricOrderedSubmitNodeCollector fabricDelegate =
-                    (FabricOrderedSubmitNodeCollector) this.delegate;
-            if (usesForwardZOffset(renderType)) {
-                List<BlockStateModelPart> copiedParts = List.copyOf(parts);
-                int[] copiedTints = Arrays.copyOf(tints, tints.length);
-                int baseColor = this.alphaMultiplier;
-                PoseStack.Pose framePose = poseStack.last().copy();
-                framePose.pose().translate(0.0F, 0.0F, ITEM_FRAME_DEPTH_OFFSET);
-                int quadCount = countBlockModelQuads(copiedParts);
-                if (LOGGED_FORWARD_SUBMISSION.compareAndSet(false, true)) {
-                    RenderHideClient.LOGGER.info(
-                            "Render Hide alpha.14: queued forward block model: {} parts, {} quads, opacity {}",
-                            copiedParts.size(), quadCount, this.opacity);
-                }
-                CustomFeatureRenderer.Submit submit =
-                        new CustomFeatureRenderer.Submit(
-                                framePose, translucentType,
-                                (pose, consumer) -> {
-                                    if (LOGGED_FORWARD_RENDER.compareAndSet(false, true)) {
-                                        RenderHideClient.LOGGER.info(
-                                                "Render Hide alpha.14: rendering forward block model: {} quads",
-                                                quadCount);
-                                    }
-                                    renderBlockModelQuads(pose, copiedParts, copiedTints,
-                                            light, overlay, baseColor, consumer);
-                                });
-                fabricDelegate.submitCustom(SubmitRenderPhases.AFTER_TERRAIN, submit);
-            } else {
-                BlockModelFeatureRenderer.Submit submit =
-                        new BlockModelFeatureRenderer.Submit(
-                                poseStack.last().copy(), translucentType,
-                                parts, tints, light, overlay,
-                                this.alphaMultiplier, null);
-                fabricDelegate.submitCustom(
-                        SubmitRenderPhases.TRANSLUCENT_BLOCKS_AND_ITEMS, submit);
-            }
-            if (outlineColor != 0) {
-                this.delegate.submitBlockModel(poseStack,
-                        RenderTypes.outline(
-                                net.minecraft.client.renderer.texture.TextureAtlas
-                                        .LOCATION_BLOCKS),
-                        parts, tints, light, overlay, outlineColor);
-            }
-        }
-
-        private static void renderBlockModelQuads(PoseStack.Pose pose,
-                List<BlockStateModelPart> parts, int[] tints, int light, int overlay,
-                int baseColor, VertexConsumer consumer) {
-            QuadInstance instance = new QuadInstance();
-            instance.setLightCoords(light);
-            instance.setOverlayCoords(overlay);
-            for (BlockStateModelPart part : parts) {
-                for (Direction direction : DIRECTIONS) {
-                    for (BakedQuad quad : part.getQuads(direction)) {
-                        putBlockModelQuad(pose, quad, tints, baseColor,
-                                instance, consumer);
-                    }
-                }
-                for (BakedQuad quad : part.getQuads(null)) {
-                    putBlockModelQuad(pose, quad, tints, baseColor,
-                            instance, consumer);
-                }
-            }
-        }
-
-        private static int countBlockModelQuads(List<BlockStateModelPart> parts) {
-            int count = 0;
-            for (BlockStateModelPart part : parts) {
-                for (Direction direction : DIRECTIONS) {
-                    count += part.getQuads(direction).size();
-                }
-                count += part.getQuads(null).size();
-            }
-            return count;
-        }
-
-        private static void putBlockModelQuad(PoseStack.Pose pose, BakedQuad quad,
-                int[] tints, int baseColor, QuadInstance instance,
-                VertexConsumer consumer) {
-            int tintIndex = quad.materialInfo().tintIndex();
-            boolean usesTint = tintIndex != -1 && tintIndex < tints.length;
-            instance.setColor(usesTint
-                    ? ARGB.multiply(baseColor, tints[tintIndex])
-                    : baseColor);
-            consumer.putBakedQuad(pose, quad, instance);
+            this.delegate.submitBlockModel(poseStack, RenderTypes.translucentMovingBlock(),
+                    parts, colors(tints), light, overlay, outlineColor);
         }
 
         @Override
@@ -313,40 +221,7 @@ class EntityAlphaOrderedSubmitNodeCollector implements OrderedSubmitNodeCollecto
 
             Identifier texture = ((RenderSetupTextureBindingAccessor) binding)
                     .renderhide$getLocation();
-            if (((RenderSetupAccessor) (Object) setup).renderhide$getLayeringTransform()
-                    == LayeringTransform.VIEW_OFFSET_Z_LAYERING_FORWARD) {
-                return translucentEntityZOffsetForward(texture);
-            }
             return RenderTypes.entityTranslucent(texture);
-        }
-
-        private static RenderType translucentEntityZOffsetForward(Identifier texture) {
-            return TRANSLUCENT_Z_OFFSET_FORWARD_TYPES.computeIfAbsent(texture, location -> {
-                RenderSetup setup = RenderSetup.builder(
-                                RenderPipelines.ENTITY_TRANSLUCENT_CULL)
-                        .withTexture("Sampler0", location)
-                        .setOutputTarget(OutputTarget.MAIN_TARGET)
-                        .useLightmap()
-                        .useOverlay()
-                        .setLayeringTransform(LayeringTransform.VIEW_OFFSET_Z_LAYERING_FORWARD)
-                        .affectsCrumbling()
-                        .sortOnUpload()
-                        .setOutline(RenderSetup.OutlineProperty.AFFECTS_OUTLINE)
-                        .createRenderSetup();
-                return RenderTypeAccessor.renderhide$create(
-                        "renderhide_entity_translucent_z_offset_forward", setup);
-            });
-        }
-
-        private static boolean usesForwardZOffset(RenderType renderType) {
-            if (renderType.pipeline() == RenderPipelines.ENTITY_SOLID_Z_OFFSET_FORWARD) {
-                return true;
-            }
-            RenderSetup setup = ((RenderTypeAccessor) (Object) renderType)
-                    .renderhide$getState();
-            return ((RenderSetupAccessor) (Object) setup)
-                    .renderhide$getLayeringTransform()
-                    == LayeringTransform.VIEW_OFFSET_Z_LAYERING_FORWARD;
         }
 
         private static RenderType translucentItemType(RenderType original) {

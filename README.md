@@ -1,4 +1,4 @@
-# Render Hide 2.5.0-alpha.15 — Minecraft 26.2 port
+# Render Hide 2.5.0-alpha.16 — Minecraft 26.2 port
 
 Port based on the supplied `render-hide-1.21.11-2.5.0-alpha.1.jar` and its
 matching source revision. This repository ports that exact behavior to
@@ -69,6 +69,10 @@ Alpha.15 identifies the item-frame body's exact
 layering-state comparison did not recognize this submission, so the intended
 post-terrain item-frame path was never entered despite the body being submitted
 normally. The layering comparison remains only as a compatibility fallback.
+
+Alpha.16 removes all item-frame-specific experiments introduced after Alpha.5.
+Entity opacity returns to the general Alpha.5 submission behavior so further
+work can focus only on static and moving block boundary-face rules.
 
 ## Requirements
 
