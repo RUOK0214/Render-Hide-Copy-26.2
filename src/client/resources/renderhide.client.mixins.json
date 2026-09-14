@@ -18,6 +18,7 @@
     "RenderTypeAccessor",
     "SectionBuilderMixin",
     "SodiumGhostBlockMixin",
+    "SodiumMovingBlockMixin",
     "SodiumBlockOcclusionMixin",
     "SodiumSectionCompilerMixin",
     "SodiumFluidRendererMixin",
