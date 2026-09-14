@@ -19,6 +19,8 @@
 package com.ruok0214.renderhide.mixin;
 
 import com.ruok0214.renderhide.RegionManager;
+import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.DefaultMaterials;
+import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.Material;
 import net.caffeinemc.mods.sodium.client.render.model.MutableQuadViewImpl;
 import net.minecraft.client.renderer.block.dispatch.BlockStateModel;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
@@ -60,16 +62,10 @@ abstract class SodiumGhostBlockMixin {
         }
     }
 
-    @Inject(
-            method = {"processQuad"},
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/caffeinemc/mods/sodium/client/render/model/AbstractBlockRenderContext;shadeQuad(Lnet/caffeinemc/mods/sodium/client/render/model/MutableQuadViewImpl;Lnet/caffeinemc/mods/sodium/client/model/light/LightMode;ZLnet/caffeinemc/mods/sodium/client/render/model/SodiumShadeMode;)V",
-                    shift = At.Shift.AFTER
-            ),
-            remap = false
-    )
-    private void renderhide$makeQuadTranslucent(MutableQuadViewImpl mutableQuadViewImpl, CallbackInfo callbackInfo) {
+    // Apply alpha after tint/shading, immediately before vertex encoding.
+    @Inject(method = "bufferQuad", at = @At("HEAD"), remap = false)
+    private void renderhide$makeQuadTranslucent(MutableQuadViewImpl mutableQuadViewImpl,
+            float[] brightnesses, Material material, CallbackInfo callbackInfo) {
         if (this.renderhide$currentPos == null || this.renderhide$currentState == null || !RegionManager.isGhostRendered(this.renderhide$currentPos, this.renderhide$currentState)) {
             return;
         }
@@ -82,12 +78,15 @@ abstract class SodiumGhostBlockMixin {
         }
     }
 
-    @Redirect(method={"processQuad"}, at=@At(value="INVOKE", target="Lnet/caffeinemc/mods/sodium/client/render/model/MutableQuadViewImpl;getRenderType()Lnet/minecraft/client/renderer/chunk/ChunkSectionLayer;"), remap=false)
-    private ChunkSectionLayer renderhide$useTranslucentLayer(MutableQuadViewImpl mutableQuadViewImpl) {
-        if (this.renderhide$currentPos != null && this.renderhide$currentState != null && RegionManager.isGhostRendered(this.renderhide$currentPos, this.renderhide$currentState)) {
-            return ChunkSectionLayer.TRANSLUCENT;
+    // Replace the final material, after Sodium's inherited forceOpaque decision.
+    @Redirect(method = "processQuad", at = @At(value = "INVOKE",
+            target = "Lnet/caffeinemc/mods/sodium/client/render/chunk/terrain/material/DefaultMaterials;forChunkLayer(Lnet/minecraft/client/renderer/chunk/ChunkSectionLayer;)Lnet/caffeinemc/mods/sodium/client/render/chunk/terrain/material/Material;"), remap = false)
+    private Material renderhide$useTranslucentLayer(ChunkSectionLayer layer) {
+        if (this.renderhide$currentPos != null && this.renderhide$currentState != null
+                && RegionManager.isGhostRendered(this.renderhide$currentPos, this.renderhide$currentState)) {
+            return DefaultMaterials.forChunkLayer(ChunkSectionLayer.TRANSLUCENT);
         }
-        return mutableQuadViewImpl.getRenderType();
+        return DefaultMaterials.forChunkLayer(layer);
     }
 
     @Inject(method={"renderModel"}, at={@At(value="RETURN")}, remap=false)
