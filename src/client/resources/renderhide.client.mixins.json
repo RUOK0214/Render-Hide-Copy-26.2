@@ -22,7 +22,7 @@
     "SodiumSectionCompilerMixin",
     "SodiumFluidRendererMixin",
     "SodiumVirtualLightMixin",
-    "SodiumLightPipelineMixin"
+    "SodiumLightDataMixin"
   ],
   "injectors": {
     "defaultRequire": 1
