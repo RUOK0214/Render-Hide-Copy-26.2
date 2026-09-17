@@ -22,13 +22,9 @@ jobs:
       - name: Verify exact release binary
         run: |
           echo '6aabe076b21ec0fad5939f7045d2e1d61447eba581449901745a91d3af8c3483  dist/render-hide-26.2-2.6.1+26.2.jar' | sha256sum --check
-      - name: Publish release with installation asset
+      - name: Publish release or update its bilingual documentation
         shell: bash
         run: |
-          if gh release view v2.6.1 >/dev/null 2>&1; then
-            echo "Release already exists; leaving it unchanged."
-            exit 0
-          fi
           cat > release-notes.md <<'NOTES'
           ## Render Hide 2.6.1 — Minecraft 26.2
           
@@ -67,6 +63,115 @@ jobs:
           
           제작: **RUOK0214** · 라이선스: **MIT**
           문의 및 커뮤니티: https://discord.gg/95secUdgMK
+          
+          최신 배포 상태와 검증 범위: [배포 점검 문서](https://github.com/RUOK0214/Render-Hide-Copy-26.2/blob/main/docs/RELEASE_READINESS.md)
+          
+          ---
+          
+          ## English — Render Hide 2.6.1 for Minecraft 26.2
+          
+          Render Hide is a client-side mod that hides blocks and entities in selected regions or adjusts their opacity. It does not change world blocks, collisions or redstone behavior.
+          
+          ### Features
+          
+          - Save multiple regions, edit names and coordinates, and toggle each region individually.
+          - Adjust opacity from 0% to 100% in 5% steps.
+          - Use global and per-region block/entity filters. Types added to a filter remain normally visible.
+          - Opacity handling for piston-moved blocks, block entities and water, subject to the limitations below.
+          - Virtual lighting and region outlines.
+          - English/Korean Mod Menu descriptions and a clickable Discord link.
+          
+          ### Installation
+          
+          1. Use **Minecraft Java Edition 26.2** with **Java 25** and **Fabric Loader 0.19.3 or later**.
+          2. Install **Fabric API 0.158.0+26.2 or later, built for Minecraft 26.2**.
+          3. Download **`render-hide-26.2-2.6.1+26.2.jar`** from the Assets section below and place it in your client's `mods` folder.
+          4. Remove older Render Hide JARs before starting the game.
+          
+          This is a **client-only** mod; the server does not need it. GitHub's **Source code** ZIP/TAR files are not installable mods.
+          **Sodium is optional.** The compatibility implementation targets **mc26.2-0.9.1-fabric**. Other Sodium versions and Iris/shader combinations are not guaranteed to work.
+          Mod Menu is optional; press **H** to open the mod's settings.
+          
+          ### Default controls
+          
+          | Key | Action |
+          | --- | --- |
+          | H | Open settings |
+          | F9 / F10 | Select the first / second corner using the targeted block |
+          | F7 | Save the selected region |
+          | F8 | Toggle all hiding |
+          | F6 | Toggle saved region outlines |
+          
+          Entity filter example:
+          ```mcfunction
+          /renderhide e_filter add minecraft:allay
+          ```
+          
+          This adds allays to the hiding exceptions. To add the type of the entity you are looking at, use `/renderhide e_filter add` without an ID.
+          
+          ### Known limitations
+          
+          - Item-frame bodies and some touching faces of stationary or moving blocks may render incorrectly.
+          - **Region settings are shared across worlds and servers.** Saved regions apply at matching coordinates in the same dimension in other worlds too. Use **F8** to turn hiding off when needed.
+          - Name tags, flames, leashes and some particles do not receive the same opacity handling as entity models.
+          - Translucent items omit enchantment glint. Block entities keep their normal render-distance limits.
+          - Large regions can make render rebuilds expensive. At high GUI scales or small window sizes, lower controls may be clipped; reduce the GUI scale if necessary.
+          - The global hiding and virtual-lighting switches return to their default ON state after restarting.
+          - Configuration files are stored as `config/renderhide-*.json`. Close the game and back up the complete set together.
+          - Mod Menu descriptions and key bindings support English/Korean; most settings controls and messages are in English.
+          - The build and release-file checks passed. **This audit did not launch Minecraft or complete testing across every mod/shader combination.** Publishing a regular release does not mean these limitations have been fixed.
+          
+          This release is based on alpha.27. Remaining issues are planned for follow-up versions, and the `v2.6.0-first-complete` checkpoint remains available.
+          
+          ### Support and verification
+          
+          For bug reports, include your mod/Minecraft/Fabric/Sodium/Iris versions, shader/resource pack, GPU, reproduction steps, opacity/filter settings, and `latest.log` or a crash report.
+          
+          - [Current release status and verification scope](https://github.com/RUOK0214/Render-Hide-Copy-26.2/blob/main/docs/RELEASE_READINESS.md)
+          - [GitHub Issues](https://github.com/RUOK0214/Render-Hide-Copy-26.2/issues)
+          - [Discord community](https://discord.gg/95secUdgMK)
+          
+          Created by **RUOK0214** · **MIT License**
+          
+          SHA-256 of the installation JAR:
+          ```text
+          6aabe076b21ec0fad5939f7045d2e1d61447eba581449901745a91d3af8c3483
+          ```
           NOTES
+          if gh release view v2.6.1 >/dev/null 2>&1; then
+            gh api "repos/$GH_REPO/releases/tags/v2.6.1" > current-release.json
+            gh api "repos/$GH_REPO/git/ref/tags/v2.6.1" > current-tag.json
+            python3 - <<'PY'
+          import json
+          from pathlib import Path
+          release = json.loads(Path("current-release.json").read_text())
+          tag = json.loads(Path("current-tag.json").read_text())
+          notes = Path("release-notes.md").read_text()
+          assert release["id"] == 390426444, "Unexpected release identity"
+          assert not release["draft"] and not release["prerelease"], "Unexpected release state"
+          assert tag["object"]["type"] == "commit"
+          assert tag["object"]["sha"] == "ded42ec6ed62e60e59970a7f9a920905280a03fa", "Release tag changed"
+          assets = release["assets"]
+          assert len(assets) == 1, "Release assets changed"
+          assert assets[0]["id"] == 569414407
+          assert assets[0]["name"] == "render-hide-26.2-2.6.1+26.2.jar"
+          assert assets[0]["digest"] == "sha256:6aabe076b21ec0fad5939f7045d2e1d61447eba581449901745a91d3af8c3483"
+          assert release["updated_at"] == "2026-09-17T04:05:21Z" or (release["body"] or "").strip() == notes.strip(), "Release notes changed concurrently; review before replacing"
+          PY
+            gh release edit v2.6.1 --notes-file release-notes.md
+            gh api "repos/$GH_REPO/releases/tags/v2.6.1" > updated-release.json
+            python3 - <<'PY'
+          import json
+          from pathlib import Path
+          before = json.loads(Path("current-release.json").read_text())
+          after = json.loads(Path("updated-release.json").read_text())
+          assert after["body"].strip() == Path("release-notes.md").read_text().strip()
+          for key in ("id", "tag_name", "target_commitish", "draft", "prerelease", "published_at"):
+              assert before[key] == after[key], key
+          assert before["assets"] == after["assets"], "Assets changed"
+          print("Bilingual release notes updated; release identity and assets preserved.")
+          PY
+            exit 0
+          fi
           gh release create v2.6.1 'dist/render-hide-26.2-2.6.1+26.2.jar' --target ded42ec6ed62e60e59970a7f9a920905280a03fa --title 'Render Hide 2.6.1 — Minecraft 26.2' --notes-file release-notes.md --draft
           gh release edit v2.6.1 --draft=false --latest
