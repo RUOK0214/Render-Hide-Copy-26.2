@@ -46,13 +46,3 @@ java {
     sourceCompatibility = JavaVersion.VERSION_25
     targetCompatibility = JavaVersion.VERSION_25
 }
-
-tasks.register('inspectLightApi', Exec) {
-    dependsOn tasks.named('compileClientJava')
-    commandLine "${System.getProperty('java.home')}/bin/javap", '-p', '-c',
-        '-classpath', sourceSets.client.compileClasspath.asPath,
-        'net.minecraft.client.renderer.chunk.RenderSectionRegion',
-        'net.minecraft.util.LightCoordsUtil',
-        'net.minecraft.client.renderer.block.BlockModelLighter'
-}
-tasks.named('build') { dependsOn 'inspectLightApi' }
