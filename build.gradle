@@ -46,3 +46,14 @@ java {
     sourceCompatibility = JavaVersion.VERSION_25
     targetCompatibility = JavaVersion.VERSION_25
 }
+
+tasks.register('inspectBlockEntityRenderApi', Exec) {
+    dependsOn tasks.named('compileClientJava')
+    commandLine "${System.getProperty('java.home')}/bin/javap", '-p', '-c',
+        '-classpath', sourceSets.client.compileClasspath.asPath,
+        'net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher',
+        'net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState',
+        'net.minecraft.client.renderer.blockentity.BlockEntityRenderer',
+        'net.minecraft.client.renderer.blockentity.ChestRenderer'
+}
+tasks.named('build') { dependsOn 'inspectBlockEntityRenderApi' }
