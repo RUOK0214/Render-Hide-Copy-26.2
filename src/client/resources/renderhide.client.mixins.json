@@ -4,6 +4,8 @@
   "compatibilityLevel": "JAVA_25",
   "client": [
     "BlockModelRendererMixin",
+    "BlockEntityRenderStateMixin",
+    "BlockEntityRenderDispatcherMixin",
     "BlockRenderManagerMixin",
     "EntityRenderManagerMixin",
     "EntityRenderStateMixin",
