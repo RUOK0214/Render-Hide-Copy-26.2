@@ -25,6 +25,7 @@
     "SodiumBlockOcclusionMixin",
     "SodiumSectionCompilerMixin",
     "SodiumFluidRendererMixin",
+    "SodiumDefaultFluidRendererMixin",
     "SodiumVirtualLightMixin",
     "SodiumLightDataMixin"
   ],

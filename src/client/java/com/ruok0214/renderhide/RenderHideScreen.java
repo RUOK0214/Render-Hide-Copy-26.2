@@ -66,6 +66,9 @@ extends Screen {
     }
 
     protected void init() {
+        this.addRenderableWidget(Button.builder(Component.literal("나가기"), b ->
+                net.minecraft.client.Minecraft.getInstance().setScreenAndShow(null))
+                .bounds(Math.max(0, this.width - 78), 4, 70, 20).build());
         if (this.editingEntityFilters) {
             this.initEntityFilterEditor();
             return;
