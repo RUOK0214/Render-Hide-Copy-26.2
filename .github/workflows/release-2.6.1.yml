@@ -1,0 +1,72 @@
+name: Publish Render Hide 2.6.1
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/release-2.6.1.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: release-renderhide-2.6.1
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Download verified build
+        run: gh run download 35180156487 --name 'render-hide-26.2-2.6.1+26.2' --dir dist
+      - name: Verify exact release binary
+        run: |
+          echo '6aabe076b21ec0fad5939f7045d2e1d61447eba581449901745a91d3af8c3483  dist/render-hide-26.2-2.6.1+26.2.jar' | sha256sum --check
+      - name: Publish release with installation asset
+        shell: bash
+        run: |
+          if gh release view v2.6.1 >/dev/null 2>&1; then
+            echo "Release already exists; leaving it unchanged."
+            exit 0
+          fi
+          cat > release-notes.md <<'NOTES'
+          ## Render Hide 2.6.1 — Minecraft 26.2
+          
+          지정한 영역의 블록과 엔티티를 숨기거나 불투명도를 조절하는 클라이언트 모드입니다. 실제 월드와 레드스톤 동작은 변경하지 않습니다.
+          
+          ### 주요 기능
+          - 영역 저장, 이름·좌표 변경, 영역별 ON/OFF
+          - 0~100% 불투명도 조절(5% 단위)
+          - 전역·영역별 블록/엔티티 필터: 추가한 종류는 숨김 예외로 정상 표시
+          - 피스톤 이동 블록, 블록 엔티티, 물의 불투명도 처리
+          - 버추얼 라이트와 영역 테두리
+          - Mod Menu의 한국어/영어 설명 및 클릭 가능한 Discord 링크
+          
+          ### 설치
+          - Minecraft Java Edition **26.2**, **Java 25**
+          - Fabric Loader **0.19.3 이상**
+          - Minecraft 26.2용 Fabric API **0.158.0+26.2 이상**
+          - 첨부된 **render-hide-26.2-2.6.1+26.2.jar**를 클라이언트 mods 폴더에 넣으세요. 기존 Render Hide JAR은 제거하세요.
+          - 서버에는 설치할 필요가 없습니다. GitHub의 Source code ZIP은 설치 파일이 아닙니다.
+          - Sodium은 선택 사항이며 호환 기준은 **mc26.2-0.9.1-fabric**입니다. Iris/셰이더 호환성은 조합별로 다를 수 있습니다.
+          
+          ### 기본 조작
+          H: 설정 / F9·F10: 영역 선택 / F7: 저장 / F8: 전체 ON/OFF / F6: 영역 테두리
+          
+          엔티티 필터 예시: `/renderhide e_filter add minecraft:allay`
+          
+          ### 알려진 제한
+          - 아이템 액자 본체와 일부 정지·이동 블록 접촉면이 부정확하게 표시될 수 있습니다.
+          - **영역 설정은 월드/서버별로 분리되지 않습니다.** 다른 월드의 같은 차원·좌표에도 적용됩니다.
+          - 이름표·불꽃·목줄·일부 파티클의 불투명도 처리는 제한적입니다.
+          - 큰 영역에서는 렌더 재구축 비용이 발생하며, 높은 GUI 배율에서 하단 UI가 잘릴 수 있습니다.
+          - 빌드와 배포 파일 검사를 통과했습니다. 모든 환경의 실제 게임 동작을 보장하지 않습니다.
+          
+          alpha.27의 기능을 기반으로 확정한 릴리스이며, 남은 문제는 후속 버전에서 수정합니다.
+          기존 `v2.6.0-first-complete` 체크포인트는 유지됩니다.
+          
+          제작: **RUOK0214** · 라이선스: **MIT**
+          문의 및 커뮤니티: https://discord.gg/95secUdgMK
+          NOTES
+          gh release create v2.6.1 'dist/render-hide-26.2-2.6.1+26.2.jar' --target ded42ec6ed62e60e59970a7f9a920905280a03fa --title 'Render Hide 2.6.1 — Minecraft 26.2' --notes-file release-notes.md --draft
+          gh release edit v2.6.1 --draft=false --latest
