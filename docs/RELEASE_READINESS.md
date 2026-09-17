@@ -1,9 +1,42 @@
-# 배포 준비 점검 — alpha.27
+# 배포 상태 및 검증 범위 — Render Hide 2.6.1
 
-판정: **테스트 배포 가능 후보, 안정판 승인 아님.**
-코드 및 JAR 점검과 게임 실행 검증은 별개다. 이 점검에서는 실제 Minecraft 화면을 실행하지 않았다.
+최종 문서 확인: **2026-09-17**
 
-## 이번 점검에서 보완한 항목
+## 현재 릴리스 결정
+
+**v2.6.1은 알려진 제한을 공개한 정식 릴리스로 게시되었습니다.**
+alpha.27의 기능을 기준으로 버전을 확정하고 Mod Menu의 한국어/영어 설명과 Discord 링크를 반영했습니다.
+정식 릴리스라는 표시는 모든 버그 해결이나 모든 모드·셰이더 조합의 안정성 검증 완료를 뜻하지 않습니다.
+남은 문제는 아래에 공개하며 후속 버전에서 수정합니다.
+
+- [v2.6.1 다운로드 및 한·영 설치 안내](https://github.com/RUOK0214/Render-Hide-Copy-26.2/releases/tag/v2.6.1)
+- 설치 파일: `render-hide-26.2-2.6.1+26.2.jar`
+- 지원 환경: Minecraft Java Edition **26.2**, Java **25**, Fabric Loader **0.19.3 이상**, Minecraft 26.2용 Fabric API **0.158.0+26.2 이상**
+- Sodium은 선택 사항이며 호환 코드의 기준은 **mc26.2-0.9.1-fabric**입니다.
+- 기존 `v2.6.0-first-complete` 체크포인트는 유지합니다.
+
+## 확인 완료한 범위
+
+- 저장소 공개 상태, 비로그인 GitHub API 접근, v2.6.1의 정식·최신 릴리스 게시 상태.
+- [릴리스 커밋의 GitHub Actions 빌드 성공](https://github.com/RUOK0214/Render-Hide-Copy-26.2/actions/runs/35180156487).
+- 릴리스 태그가 빌드 커밋 `ded42ec6ed62e60e59970a7f9a920905280a03fa`를 가리킴.
+- 첨부 JAR의 등록 상태 및 GitHub 기록 SHA-256과 보관된 검사 JAR의 해시 일치.
+- 검사 JAR의 압축 무결성, 내부 버전·의존성·클라이언트 전용 선언, 엔트리포인트·믹스인 클래스 포함 여부.
+- MIT 라이선스 원문·제작자 표기·아이콘·한/영 Mod Menu 설명 및 Discord 링크 포함.
+
+JAR SHA-256:
+```text
+6aabe076b21ec0fad5939f7045d2e1d61447eba581449901745a91d3af8c3483
+```
+
+## 실행 검증과의 구분
+
+이번 배포 점검에서는 실제 Minecraft를 실행하지 않았습니다.
+사용자가 제공한 게임 화면과 시연 영상은 사용한 환경에서의 관찰 자료이며, 아래의 전체 조합별 회귀 확인표를 통과한 기록은 아닙니다.
+공개 첨부 파일의 재다운로드 시도는 연결 시간 초과로 완료하지 못했으므로, 비로그인 다운로드의 처음부터 끝까지의 검증 완료로 표기하지 않습니다.
+코드·JAR 검사와 실제 게임 실행 검증을 구분하며, 미확인 항목은 통과로 간주하지 않습니다.
+
+## alpha.27에서 보완하여 v2.6.1에 포함한 항목
 
 - 영역 add/toggle 명령 인수를 quoted string으로 통일: 공백·한글로 변경한 영역의 toggle 지원.
 - alpha.26 엔티티 ID 콜론 처리 수정 유지.
@@ -20,7 +53,7 @@
 - 바이너리/소스 JAR에 MIT 원문 포함, 설치 아티팩트에서 sources JAR 제외.
 - alpha.16에 머물던 README를 실제 기능·제약 기준으로 교체.
 
-## 안정판 전에 해결하거나 공개해야 하는 사항
+## 알려진 제한 및 후속 검증 과제
 
 | 우선도 | 내용 | 근거/영향 |
 | --- | --- | --- |
@@ -37,7 +70,7 @@
 | 낮음 | 지역명 생성/변경 차이 | 생성은 영문 정규화, 이름 변경은 한글/공백 지원 |
 | 낮음 | 번역 범위 | 단축키는 한/영 번역, 설정 UI·메시지는 대부분 영어 |
 
-## 출시 전 실제 게임 확인표
+## 후속 실제 게임 회귀 확인표
 
 각 항목을 **Fabric API만 / Sodium 0.9.1 / Sodium 0.9.1 + Iris(셰이더 OFF/ON)**에서 확인한다.
 Iris 버전, 셰이더 이름·버전, GPU, 리소스팩을 기록한다.
@@ -57,8 +90,19 @@ Iris 버전, 셰이더 이름·버전, GPU, 리소스팩을 기록한다.
 - [ ] 월드 A→B 및 차원 이동: 공유 설정 의도 확인, 선택 좌표 초기화
 - [ ] 큰 영역·여러 영역에서 슬라이더 변경 및 청크 갱신 성능
 
-## 배포 방법
+## 배포 및 오류 제보 안내
 
-위 알려진 문제를 공개한 alpha 사전 배포로 제공한다.
-정식 버전 태그나 기존 first-complete 태그는 이동하지 않는다.
-설치 JAR 하나와 지원 환경, 알려진 문제, 재현 방법/로그 요청 안내를 함께 제공한다.
+v2.6.1은 위 제한을 공개한 정식 릴리스로 배포합니다. alpha 사전 배포 후보였던 이전 문서의 판정을 현재 릴리스 상태와 구분하기 위해 이 문서를 갱신했습니다.
+이번 안내 갱신은 문서 수정이며, v2.6.1 JAR과 릴리스 태그 및 기존 first-complete 태그는 변경하지 않습니다.
+태그에 고정된 소스에는 당시 문서가 보존되므로, 최신 검증 안내는 [main의 이 문서](https://github.com/RUOK0214/Render-Hide-Copy-26.2/blob/main/docs/RELEASE_READINESS.md)를 참고하세요.
+
+오류 제보 시 모드 버전, Minecraft/Fabric/Sodium/Iris 버전, 셰이더·리소스팩, GPU, 재현 과정, 불투명도·필터 설정, `latest.log` 또는 충돌 보고서를 함께 제공하세요.
+[GitHub Issues](https://github.com/RUOK0214/Render-Hide-Copy-26.2/issues) 또는 [Discord](https://discord.gg/95secUdgMK)에서 제보할 수 있습니다.
+
+## English summary
+
+v2.6.1 is published as a regular release with known limitations disclosed. It is based on alpha.27 and includes localized Mod Menu descriptions and a Discord link.
+Publication does not mean all bugs or all renderer/shader combinations have been validated.
+The release build, archive contents, metadata and matching SHA-256 have been checked; this audit did not launch Minecraft or complete the runtime checklist above.
+Item frames, touching faces, shared region settings across worlds, and renderer compatibility remain documented limitations or follow-up work.
+See the [release page](https://github.com/RUOK0214/Render-Hide-Copy-26.2/releases/tag/v2.6.1) for English installation instructions, controls and known limitations.
