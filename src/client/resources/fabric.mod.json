@@ -1,31 +1,35 @@
 {
-	"schemaVersion": 1,
-	"id": "renderhide",
-	"version": "${version}",
-	"name": "Render Hide",
-	"description": "Hide selected cuboid regions from client-side world rendering without changing the world.",
-	"authors": [
-		"RUOK0214"
-	],
-	"contact": {},
-	"license": "MIT",
-	"icon": "assets/renderhide/icon.png",
-	"environment": "client",
-	"entrypoints": {
-		"client": [
-			"com.ruok0214.renderhide.RenderHideClient"
-		]
-	},
-	"mixins": [
-		{
-			"config": "renderhide.client.mixins.json",
-			"environment": "client"
-		}
-	],
-	"depends": {
-		"fabricloader": ">=0.19.3",
-		"minecraft": "=26.2",
-		"java": ">=25",
-		"fabric-api": ">=0.158.0+26.2"
-	}
+  "schemaVersion": 1,
+  "id": "renderhide",
+  "version": "${version}",
+  "name": "Render Hide",
+  "description": "지정한 영역의 블록과 엔티티를 숨기거나 불투명도를 조절합니다. 필터에 추가한 종류는 그대로 표시하며, 실제 월드와 레드스톤 동작은 변경하지 않습니다.\n\nH: 설정 · F9/F10: 영역 선택 · F7: 저장 · F8: 전체 켜기/끄기\n\n디스코드: https://discord.gg/95secUdgMK\n\n알려진 제한: 아이템 액자와 일부 접촉면의 표시가 부정확할 수 있으며, 영역 설정은 월드 간 공유됩니다.",
+  "authors": [
+    "RUOK0214"
+  ],
+  "contact": {
+    "homepage": "https://discord.gg/95secUdgMK",
+    "sources": "https://github.com/RUOK0214/Render-Hide-Copy-26.2",
+    "issues": "https://github.com/RUOK0214/Render-Hide-Copy-26.2/issues"
+  },
+  "license": "MIT",
+  "icon": "assets/renderhide/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.ruok0214.renderhide.RenderHideClient"
+    ]
+  },
+  "mixins": [
+    {
+      "config": "renderhide.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "minecraft": "=26.2",
+    "java": ">=25",
+    "fabric-api": ">=0.158.0+26.2"
+  }
 }
