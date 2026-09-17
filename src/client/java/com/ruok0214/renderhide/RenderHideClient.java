@@ -146,11 +146,11 @@ implements ClientModInitializer {
                 .then(ClientCommands.literal("e_filter")
                     .then(ClientCommands.literal("add")
                         .executes(ctx -> lookedAtEntityFilter())
-                        .then(ClientCommands.argument("entity", StringArgumentType.word())
+                        .then(ClientCommands.argument("entity", StringArgumentType.greedyString())
                             .suggests((ctx, builder) -> suggestEntities(builder, false))
                             .executes(ctx -> entityFilter(StringArgumentType.getString(ctx, "entity"), true))))
                     .then(ClientCommands.literal("remove")
-                        .then(ClientCommands.argument("entity", StringArgumentType.word())
+                        .then(ClientCommands.argument("entity", StringArgumentType.greedyString())
                             .suggests((ctx, builder) -> suggestEntities(builder, true))
                             .executes(ctx -> entityFilter(StringArgumentType.getString(ctx, "entity"), false))))
                     .then(ClientCommands.literal("list").executes(ctx -> {
@@ -203,6 +203,7 @@ implements ClientModInitializer {
     }
 
     private static int entityFilter(String value, boolean add) {
+        value = value.trim();
         Identifier id = Identifier.tryParse(value);
         if (id == null || !BuiltInRegistries.ENTITY_TYPE.containsKey(id)) {
             RegionManager.message("Unknown entity: " + value);
