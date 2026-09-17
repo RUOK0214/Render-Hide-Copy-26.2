@@ -33,7 +33,9 @@ dependencies {
 tasks.withType(ProcessResources).configureEach {
     inputs.property 'version', project.version
     filesMatching('fabric.mod.json') {
-        expand version: project.version
+        expand([version: project.version]) {
+            escapeBackslash = true
+        }
     }
 }
 
