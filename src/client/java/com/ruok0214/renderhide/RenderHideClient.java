@@ -141,7 +141,28 @@ implements ClientModInitializer {
     }
 
     private void registerCommands() {
-        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)ClientCommands.literal((String)"renderhide").executes(ctx -> RenderHideClient.help((FabricClientCommandSource)ctx.getSource()))).then(ClientCommands.literal((String)"pos1").executes(ctx -> RenderHideClient.setLookedAt(true) ? 1 : 0))).then(ClientCommands.literal((String)"pos2").executes(ctx -> RenderHideClient.setLookedAt(false) ? 1 : 0))).then(((LiteralArgumentBuilder)ClientCommands.literal((String)"add").executes(ctx -> RegionManager.add("region") ? 1 : 0)).then(ClientCommands.argument((String)"name", (ArgumentType)StringArgumentType.word()).executes(ctx -> RegionManager.add(StringArgumentType.getString((CommandContext)ctx, (String)"name")) ? 1 : 0)))).then(ClientCommands.literal((String)"remove").then(ClientCommands.argument((String)"name", (ArgumentType)StringArgumentType.word()).suggests((ctx, builder) -> RenderHideClient.suggestNames(builder)).executes(ctx -> RenderHideClient.result(RegionManager.remove(StringArgumentType.getString((CommandContext)ctx, (String)"name")), "Region not found."))))).then(ClientCommands.literal((String)"toggle").then(ClientCommands.argument((String)"name", (ArgumentType)StringArgumentType.word()).suggests((ctx, builder) -> RenderHideClient.suggestNames(builder)).executes(ctx -> RenderHideClient.result(RegionManager.toggle(StringArgumentType.getString((CommandContext)ctx, (String)"name")), "Region not found."))))).then(ClientCommands.literal((String)"global").executes(ctx -> {
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) ->
+            dispatcher.register(ClientCommands.literal("renderhide")
+                .then(ClientCommands.literal("e_filter")
+                    .then(ClientCommands.literal("add")
+                        .executes(ctx -> lookedAtEntityFilter())
+                        .then(ClientCommands.argument("entity", StringArgumentType.word())
+                            .suggests((ctx, builder) -> suggestEntities(builder, false))
+                            .executes(ctx -> entityFilter(StringArgumentType.getString(ctx, "entity"), true))))
+                    .then(ClientCommands.literal("remove")
+                        .then(ClientCommands.argument("entity", StringArgumentType.word())
+                            .suggests((ctx, builder) -> suggestEntities(builder, true))
+                            .executes(ctx -> entityFilter(StringArgumentType.getString(ctx, "entity"), false))))
+                    .then(ClientCommands.literal("list").executes(ctx -> {
+                        RegionManager.message("Visible entity filters: " + RegionManager.visibleEntityFilters());
+                        return 1;
+                    }))
+                    .then(ClientCommands.literal("clear").executes(ctx -> {
+                        RegionManager.clearVisibleEntityFilters();
+                        return 1;
+                    })))));
+
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)ClientCommands.literal((String)"renderhide").executes(ctx -> RenderHideClient.help((FabricClientCommandSource)ctx.getSource()))).then(ClientCommands.literal((String)"pos1").executes(ctx -> RenderHideClient.setLookedAt(true) ? 1 : 0))).then(ClientCommands.literal((String)"pos2").executes(ctx -> RenderHideClient.setLookedAt(false) ? 1 : 0))).then(((LiteralArgumentBuilder)ClientCommands.literal((String)"add").executes(ctx -> RegionManager.add("region") ? 1 : 0)).then(ClientCommands.argument((String)"name", (ArgumentType)StringArgumentType.word()).executes(ctx -> RegionManager.add(StringArgumentType.getString((CommandContext)ctx, (String)"name")) ? 1 : 0)))).then(ClientCommands.literal((String)"remove").then(ClientCommands.argument((String)"name", (ArgumentType)StringArgumentType.string()).suggests((ctx, builder) -> RenderHideClient.suggestNames(builder)).executes(ctx -> RenderHideClient.result(RegionManager.remove(StringArgumentType.getString((CommandContext)ctx, (String)"name")), "Region not found."))))).then(ClientCommands.literal((String)"toggle").then(ClientCommands.argument((String)"name", (ArgumentType)StringArgumentType.word()).suggests((ctx, builder) -> RenderHideClient.suggestNames(builder)).executes(ctx -> RenderHideClient.result(RegionManager.toggle(StringArgumentType.getString((CommandContext)ctx, (String)"name")), "Region not found."))))).then(ClientCommands.literal((String)"global").executes(ctx -> {
             RegionManager.toggleGlobal();
             return 1;
         }))).then(ClientCommands.literal((String)"outlines").executes(ctx -> {
@@ -165,9 +186,35 @@ implements ClientModInitializer {
         }))));
     }
 
+    private static CompletableFuture<Suggestions> suggestEntities(SuggestionsBuilder builder, boolean filtersOnly) {
+        String query = builder.getRemaining().toLowerCase(java.util.Locale.ROOT);
+        var ids = filtersOnly ? RegionManager.visibleEntityFilters() : BuiltInRegistries.ENTITY_TYPE.keySet();
+        ids.stream().sorted().filter(id -> id.toString().startsWith(query) || id.getPath().startsWith(query))
+                .forEach(id -> builder.suggest(id.toString()));
+        return builder.buildFuture();
+    }
+
+    private static int lookedAtEntityFilter() {
+        if (Minecraft.getInstance().hitResult instanceof net.minecraft.world.phys.EntityHitResult hit) {
+            return entityFilter(BuiltInRegistries.ENTITY_TYPE.getKey(hit.getEntity().getType()).toString(), true);
+        }
+        RegionManager.message("Look at an entity, or use /renderhide e_filter add <entity_id>.");
+        return 0;
+    }
+
+    private static int entityFilter(String value, boolean add) {
+        Identifier id = Identifier.tryParse(value);
+        if (id == null || !BuiltInRegistries.ENTITY_TYPE.containsKey(id)) {
+            RegionManager.message("Unknown entity: " + value);
+            return 0;
+        }
+        return result(add ? RegionManager.addVisibleEntityFilter(id) : RegionManager.removeVisibleEntityFilter(id),
+                add ? "Entity is already in the visible filter." : "Entity is not in the visible filter.");
+    }
+
     private static CompletableFuture<Suggestions> suggestNames(SuggestionsBuilder builder) {
         for (HiddenRegion region : RegionManager.regions()) {
-            builder.suggest(region.name());
+            builder.suggest(StringArgumentType.escapeIfRequired(region.name()));
         }
         return builder.buildFuture();
     }
@@ -229,6 +276,7 @@ implements ClientModInitializer {
         source.sendFeedback((Component)Component.literal((String)"/renderhide add [name] | remove <name> | toggle <name> | list | clear"));
         source.sendFeedback((Component)Component.literal((String)"/renderhide filter add|remove <block> | filter list|clear"));
         source.sendFeedback((Component)Component.literal((String)"/renderhide light = virtual light toggle"));
+        source.sendFeedback(Component.literal("/renderhide e_filter add [entity_id] | remove <entity_id> | list | clear"));
         return 1;
     }
 }

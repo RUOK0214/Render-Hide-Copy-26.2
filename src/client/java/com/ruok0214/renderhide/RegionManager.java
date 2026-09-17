@@ -858,6 +858,42 @@ public final class RegionManager {
         return true;
     }
 
+    public static boolean rename(String oldName, String requestedName) {
+        HiddenRegion current = find(oldName);
+        String name = requestedName == null ? "" : requestedName.trim();
+        if (current == null || name.isEmpty() || name.length() > 64
+                || name.chars().anyMatch(Character::isISOControl)) {
+            message("Enter a region name (1-64 characters).");
+            return false;
+        }
+        HiddenRegion duplicate = find(name);
+        if (duplicate != null && duplicate != current) {
+            message("A region with that name already exists.");
+            return false;
+        }
+        String oldKey = current.name().toLowerCase(Locale.ROOT);
+        String newKey = name.toLowerCase(Locale.ROOT);
+        ArrayList<HiddenRegion> regions = new ArrayList<>(snapshot);
+        regions.set(regions.indexOf(current), new HiddenRegion(name, current.dimension(),
+                current.minX(), current.minY(), current.minZ(),
+                current.maxX(), current.maxY(), current.maxZ(), current.enabled()));
+        LinkedHashMap<String, Set<Identifier>> blocks = new LinkedHashMap<>(regionVisibleBlockFilters);
+        LinkedHashMap<String, Set<Identifier>> entities = new LinkedHashMap<>(regionVisibleEntityFilters);
+        Set<Identifier> blockIds = blocks.remove(oldKey);
+        Set<Identifier> entityIds = entities.remove(oldKey);
+        if (blockIds != null) blocks.put(newKey, blockIds);
+        if (entityIds != null) entities.put(newKey, entityIds);
+        regionVisibleBlockFilters = Map.copyOf(blocks);
+        regionVisibleEntityFilters = Map.copyOf(entities);
+        snapshot = List.copyOf(regions);
+        save();
+        saveRegionFilters();
+        saveRegionIdMap(REGION_ENTITY_FILTER_CONFIG, regionVisibleEntityFilters, "region entity filters");
+        refreshAll();
+        message("Region renamed: " + current.name() + " -> " + name);
+        return true;
+    }
+
     public static boolean toggle(String name) {
         ArrayList<HiddenRegion> regions = new ArrayList<HiddenRegion>(snapshot);
         for (int i = 0; i < regions.size(); ++i) {

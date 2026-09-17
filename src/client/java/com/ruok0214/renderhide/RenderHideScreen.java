@@ -131,10 +131,14 @@ extends Screen {
         for (int row = 0; row < 6 && regionStart + row < regions.size(); ++row) {
             HiddenRegion region = regions.get(regionStart + row);
             int y = 170 + row * 23;
-            this.addRenderableWidget(Button.builder((Component)Component.literal((String)((region.enabled() ? "ON  " : "OFF ") + region.name())), b -> {
+            this.addRenderableWidget(Button.builder((Component)Component.literal((String)(region.name())), b -> {
                 this.editingRegion = region.name();
                 this.rebuild();
-            }).bounds(left, y, panelWidth, 20).build());
+            }).bounds(left, y, panelWidth - 64, 20).build());
+            this.addRenderableWidget(Button.builder(Component.literal(region.enabled() ? "ON" : "OFF"), b -> {
+                RegionManager.toggle(region.name());
+                this.rebuild();
+            }).bounds(left + panelWidth - 60, y, 60, 20).build());
         }
         int navY = 311;
         this.addRenderableWidget(Button.builder((Component)Component.literal((String)"\u2039"), b -> {
@@ -217,6 +221,16 @@ extends Screen {
         }
         this.addRenderableWidget(Button.builder((Component)Component.literal((String)"Save coordinates"), b -> this.saveCoordinates()).bounds(left, 187, panelWidth, 20).build());
         if (region != null) {
+            EditBox renameBox = new EditBox(this.font, left, 160, panelWidth - 84, 20, Component.literal("Region name"));
+            renameBox.setMaxLength(64);
+            renameBox.setValue(region.name());
+            this.addRenderableWidget(renameBox);
+            this.addRenderableWidget(Button.builder(Component.literal("Rename"), b -> {
+                if (RegionManager.rename(this.editingRegion, renameBox.getValue())) {
+                    this.editingRegion = renameBox.getValue().trim();
+                    this.rebuild();
+                }
+            }).bounds(left + panelWidth - 80, 160, 80, 20).build());
             this.addRenderableWidget(Button.builder((Component)RenderHideScreen.toggleText("Region", region.enabled()), b -> {
                 RegionManager.toggle(region.name());
                 this.rebuild();
