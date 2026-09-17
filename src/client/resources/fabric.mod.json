@@ -3,7 +3,7 @@
   "id": "renderhide",
   "version": "${version}",
   "name": "Render Hide",
-  "description": "지정한 영역의 블록과 엔티티를 숨기거나 불투명도를 조절합니다. 필터에 추가한 종류는 그대로 표시하며, 실제 월드와 레드스톤 동작은 변경하지 않습니다.\n\nH: 설정 · F9/F10: 영역 선택 · F7: 저장 · F8: 전체 켜기/끄기\n\n디스코드: https://discord.gg/95secUdgMK\n\n알려진 제한: 아이템 액자와 일부 접촉면의 표시가 부정확할 수 있으며, 영역 설정은 월드 간 공유됩니다.",
+  "description": "Hide blocks and entities in selected regions or adjust their opacity. Filtered types remain visible. World blocks and redstone behavior are unchanged.\n\nH: Settings · F9/F10: Select corners · F7: Save region · F8: Toggle all\n\nKnown limitations: Item frames and some touching faces may render incorrectly. Region settings are shared across worlds.",
   "authors": [
     "RUOK0214"
   ],
@@ -31,5 +31,12 @@
     "minecraft": "=26.2",
     "java": ">=25",
     "fabric-api": ">=0.158.0+26.2"
+  },
+  "custom": {
+    "modmenu": {
+      "links": {
+        "modmenu.discord": "https://discord.gg/95secUdgMK"
+      }
+    }
   }
 }
