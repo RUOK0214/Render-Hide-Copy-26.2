@@ -83,9 +83,13 @@ abstract class MovingBlockRenderStateMixin implements MovingBlockOpacityAccess {
         float neighborOpacity = renderhide$getOpacity(queryPos);
         if (neighborOpacity > 0.0F) {
             Minecraft client = Minecraft.getInstance();
+            if (client.level == null) return;
             BlockPos movingEntityPos = queryPos.relative(renderhide$movementDirection);
             BlockEntity blockEntity = client.level.getBlockEntity(movingEntityPos);
-            cir.setReturnValue(((PistonMovingBlockEntity) blockEntity).getMovedState());
+            if (blockEntity instanceof PistonMovingBlockEntity piston
+                    && piston.getMovementDirection() == renderhide$movementDirection) {
+                cir.setReturnValue(piston.getMovedState());
+            }
         }
     }
 }

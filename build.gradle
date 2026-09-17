@@ -46,3 +46,8 @@ java {
     sourceCompatibility = JavaVersion.VERSION_25
     targetCompatibility = JavaVersion.VERSION_25
 }
+
+// Include license terms in both binary and source distributions.
+tasks.withType(Jar).configureEach {
+    from(rootProject.file("LICENSE"))
+}

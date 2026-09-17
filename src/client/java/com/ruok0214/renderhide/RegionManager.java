@@ -35,12 +35,10 @@ import com.google.gson.reflect.TypeToken;
 import com.ruok0214.renderhide.HiddenRegion;
 import com.ruok0214.renderhide.RenderHideClient;
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.Reader;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
-import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileAttribute;
 import java.util.ArrayList;
@@ -94,6 +92,7 @@ public final class RegionManager {
     private static volatile Map<String, Set<Identifier>> regionVisibleBlockFilters = Map.of();
     private static volatile Set<Identifier> visibleEntityFilters = Set.of();
     private static volatile Map<String, Set<Identifier>> regionVisibleEntityFilters = Map.of();
+    private static Object selectionLevel;
     private static BlockPos pos1;
     private static BlockPos pos2;
 
@@ -107,7 +106,20 @@ public final class RegionManager {
                 reader = Files.newBufferedReader(CONFIG);
                 try {
                     List<HiddenRegion> loaded = GSON.fromJson(reader, REGION_LIST);
-                    snapshot = loaded == null ? List.of() : List.copyOf(loaded);
+                    LinkedHashMap<String, HiddenRegion> valid = new LinkedHashMap<>();
+                    if (loaded != null) {
+                        for (HiddenRegion region : loaded) {
+                            if (region == null || region.name() == null || region.name().isBlank()
+                                    || region.dimension() == null || Identifier.tryParse(region.dimension()) == null
+                                    || region.minX() > region.maxX() || region.minY() > region.maxY()
+                                    || region.minZ() > region.maxZ()) {
+                                RenderHideClient.LOGGER.warn("Ignoring invalid hidden region in configuration");
+                                continue;
+                            }
+                            valid.putIfAbsent(region.name().toLowerCase(Locale.ROOT), region);
+                        }
+                    }
+                    snapshot = List.copyOf(valid.values());
                 }
                 finally {
                     if (reader != null) {
@@ -127,7 +139,7 @@ public final class RegionManager {
                     LinkedHashSet<Identifier> filters = new LinkedHashSet<>();
                     if (loaded != null) {
                         for (String value : loaded) {
-                            Identifier id = Identifier.tryParse(value);
+                            Identifier id = value == null ? null : Identifier.tryParse(value);
                             if (id == null || !BuiltInRegistries.BLOCK.containsKey(id)) continue;
                             filters.add(id);
                         }
@@ -156,7 +168,7 @@ public final class RegionManager {
                             LinkedHashSet<Identifier> filters = new LinkedHashSet<Identifier>();
                             if (values != null) {
                                 for (String value : values) {
-                                    Identifier id = Identifier.tryParse(value);
+                                    Identifier id = value == null ? null : Identifier.tryParse(value);
                                     if (id == null || !BuiltInRegistries.BLOCK.containsKey(id)) continue;
                                     filters.add(id);
                                 }
@@ -185,7 +197,7 @@ public final class RegionManager {
                 reader = Files.newBufferedReader(OPACITY_CONFIG);
                 try {
                     Float loaded = GSON.fromJson(reader, Float.class);
-                    if (loaded != null) {
+                    if (loaded != null && Float.isFinite(loaded)) {
                         hiddenBlockOpacity = Math.max(0.0f, Math.min(1.0f, loaded));
                     }
                 }
@@ -202,7 +214,12 @@ public final class RegionManager {
     }
 
     public static void updateDimension(Minecraft client) {
-        activeDimension = client.level == null ? "" : client.level.dimension().identifier().toString();
+        String dimension = client.level == null ? "" : client.level.dimension().identifier().toString();
+        if (selectionLevel != client.level || !dimension.equals(activeDimension)) {
+            selectionLevel = client.level;
+            clearSelection();
+            activeDimension = dimension;
+        }
     }
 
     public static boolean isHidden(BlockPos pos, BlockState state) {
@@ -949,6 +966,7 @@ public final class RegionManager {
     }
 
     public static void setHiddenBlockOpacity(double opacity) {
+        if (!Double.isFinite(opacity)) return;
         float changed = (float)Math.round((float)Math.max(0.0, Math.min(1.0, opacity)) * 20.0f) / 20.0f;
         if (Math.abs(changed - hiddenBlockOpacity) < 1.0E-4f) {
             return;
@@ -956,9 +974,7 @@ public final class RegionManager {
         hiddenBlockOpacity = changed;
         try {
             Files.createDirectories(OPACITY_CONFIG.getParent(), new FileAttribute[0]);
-            try (BufferedWriter writer = Files.newBufferedWriter(OPACITY_CONFIG, new OpenOption[0]);){
-                GSON.toJson((Object)Float.valueOf(hiddenBlockOpacity), (Appendable)writer);
-            }
+            writeConfig(OPACITY_CONFIG, GSON.toJson((Object)Float.valueOf(hiddenBlockOpacity)));
         }
         catch (Exception e) {
             RenderHideClient.LOGGER.error("Could not save hidden block opacity", (Throwable)e);
@@ -1001,12 +1017,25 @@ public final class RegionManager {
         RegionManager.refresh(changed);
     }
 
+    private static void writeConfig(Path path, String json) throws java.io.IOException {
+        Path temporary = Files.createTempFile(path.getParent(), "renderhide-", ".tmp");
+        try {
+            Files.writeString(temporary, json);
+            try {
+                Files.move(temporary, path, java.nio.file.StandardCopyOption.ATOMIC_MOVE,
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            } catch (java.nio.file.AtomicMoveNotSupportedException e) {
+                Files.move(temporary, path, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            }
+        } finally {
+            Files.deleteIfExists(temporary);
+        }
+    }
+
     private static void save() {
         try {
             Files.createDirectories(CONFIG.getParent(), new FileAttribute[0]);
-            try (BufferedWriter writer = Files.newBufferedWriter(CONFIG, new OpenOption[0]);){
-                GSON.toJson(snapshot, REGION_LIST, (Appendable)writer);
-            }
+            writeConfig(CONFIG, GSON.toJson(snapshot, REGION_LIST));
         }
         catch (Exception e) {
             RenderHideClient.LOGGER.error("Could not save hidden regions", (Throwable)e);
@@ -1016,9 +1045,7 @@ public final class RegionManager {
     private static void saveFilters() {
         try {
             Files.createDirectories(FILTER_CONFIG.getParent(), new FileAttribute[0]);
-            try (BufferedWriter writer = Files.newBufferedWriter(FILTER_CONFIG, new OpenOption[0]);){
-                GSON.toJson(visibleBlockFilters.stream().map(Identifier::toString).sorted().toList(), (Appendable)writer);
-            }
+            writeConfig(FILTER_CONFIG, GSON.toJson(visibleBlockFilters.stream().map(Identifier::toString).sorted().toList()));
         }
         catch (Exception e) {
             RenderHideClient.LOGGER.error("Could not save visible block filters", (Throwable)e);
@@ -1030,9 +1057,7 @@ public final class RegionManager {
             Files.createDirectories(REGION_FILTER_CONFIG.getParent(), new FileAttribute[0]);
             LinkedHashMap<String, List<String>> serialized = new LinkedHashMap<>();
             regionVisibleBlockFilters.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> serialized.put(entry.getKey(), entry.getValue().stream().map(Identifier::toString).sorted().toList()));
-            try (BufferedWriter writer = Files.newBufferedWriter(REGION_FILTER_CONFIG, new OpenOption[0]);){
-                GSON.toJson(serialized, (Appendable)writer);
-            }
+            writeConfig(REGION_FILTER_CONFIG, GSON.toJson(serialized));
         }
         catch (Exception e) {
             RenderHideClient.LOGGER.error("Could not save region visible block filters", (Throwable)e);
@@ -1048,7 +1073,7 @@ public final class RegionManager {
                 LinkedHashSet<Identifier> result = new LinkedHashSet<>();
                 if (loaded != null) {
                     for (String value : loaded) {
-                        Identifier id = Identifier.tryParse(value);
+                        Identifier id = value == null ? null : Identifier.tryParse(value);
                         if (id == null || !(entityIds ? BuiltInRegistries.ENTITY_TYPE.containsKey(id) : BuiltInRegistries.BLOCK.containsKey(id))) continue;
                         result.add(id);
                     }
@@ -1073,7 +1098,7 @@ public final class RegionManager {
                         LinkedHashSet<Identifier> ids = new LinkedHashSet<Identifier>();
                         if (values != null) {
                             for (String value : values) {
-                                Identifier id = Identifier.tryParse(value);
+                                Identifier id = value == null ? null : Identifier.tryParse(value);
                                 if (id == null || !(entityIds ? BuiltInRegistries.ENTITY_TYPE.containsKey(id) : BuiltInRegistries.BLOCK.containsKey(id))) continue;
                                 ids.add(id);
                             }
@@ -1093,9 +1118,7 @@ public final class RegionManager {
     private static void saveIdList(Path path, Set<Identifier> ids, String description) {
         try {
             Files.createDirectories(path.getParent(), new FileAttribute[0]);
-            try (BufferedWriter writer = Files.newBufferedWriter(path, new OpenOption[0]);){
-                GSON.toJson(ids.stream().map(Identifier::toString).sorted().toList(), (Appendable)writer);
-            }
+            writeConfig(path, GSON.toJson(ids.stream().map(Identifier::toString).sorted().toList()));
         }
         catch (Exception e) {
             RenderHideClient.LOGGER.error("Could not save " + description, (Throwable)e);
@@ -1107,9 +1130,7 @@ public final class RegionManager {
             Files.createDirectories(path.getParent(), new FileAttribute[0]);
             LinkedHashMap<String, List<String>> serialized = new LinkedHashMap<>();
             values.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> serialized.put(entry.getKey(), entry.getValue().stream().map(Identifier::toString).sorted().toList()));
-            try (BufferedWriter writer = Files.newBufferedWriter(path, new OpenOption[0]);){
-                GSON.toJson(serialized, (Appendable)writer);
-            }
+            writeConfig(path, GSON.toJson(serialized));
         }
         catch (Exception e) {
             RenderHideClient.LOGGER.error("Could not save " + description, (Throwable)e);
@@ -1118,7 +1139,7 @@ public final class RegionManager {
 
     private static void refresh(HiddenRegion region) {
         Minecraft client = Minecraft.getInstance();
-        if (client.level == null) {
+        if (client.level == null || client.levelExtractor == null) {
             return;
         }
         if (!region.dimension().equals(client.level.dimension().identifier().toString())) {

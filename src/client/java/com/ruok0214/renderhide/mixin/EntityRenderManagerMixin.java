@@ -47,6 +47,7 @@ public abstract class EntityRenderManagerMixin {
     @Inject(method = "extractEntity", at = @At("RETURN"))
     private <E extends Entity> void renderhide$storeEntityOpacity(E entity,
             float tickProgress, CallbackInfoReturnable<EntityRenderState> cir) {
+        if (cir.getReturnValue() == null) return;
         ((EntityRenderStateOpacityAccess) cir.getReturnValue())
                 .renderhide$setOpacity(RegionManager.entityRenderOpacity(entity));
     }
@@ -63,7 +64,8 @@ public abstract class EntityRenderManagerMixin {
             SubmitNodeCollector collector, CameraRenderState cameraState,
             Operation<Void> original) {
         float opacity = ((EntityRenderStateOpacityAccess) state).renderhide$getOpacity();
-        SubmitNodeCollector adjusted = opacity > 0.0F && opacity < 1.0F
+        if (opacity <= 0.0F) return;
+        SubmitNodeCollector adjusted = opacity < 1.0F
                 ? new EntityAlphaSubmitNodeCollector(collector, opacity)
                 : collector;
         original.call(renderer, state, poseStack, adjusted, cameraState);

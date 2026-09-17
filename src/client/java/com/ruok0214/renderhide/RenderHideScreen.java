@@ -66,6 +66,8 @@ extends Screen {
     }
 
     protected void init() {
+        this.filterId = null;
+        this.filterSuggestion = null;
         this.addRenderableWidget(Button.builder(Component.literal("나가기"), b ->
                 net.minecraft.client.Minecraft.getInstance().setScreenAndShow(null))
                 .bounds(Math.max(0, this.width - 78), 4, 70, 20).build());
@@ -610,11 +612,12 @@ extends Screen {
         }
 
         protected void updateMessage() {
-            this.setMessage((Component)Component.literal((String)("Hidden block opacity: " + Math.round(this.value * 100.0) + "%")));
+            this.setMessage((Component)Component.literal((String)("Hidden block opacity: " + Math.round(RegionManager.hiddenBlockOpacity() * 100.0) + "%")));
         }
 
         protected void applyValue() {
             RegionManager.setHiddenBlockOpacity(this.value);
+            this.updateMessage();
         }
     }
 }
