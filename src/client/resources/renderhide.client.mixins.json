@@ -3,6 +3,7 @@
   "package": "com.ruok0214.renderhide.mixin",
   "compatibilityLevel": "JAVA_25",
   "client": [
+    "LevelChunkMovingPistonMixin",
     "BlockModelRendererMixin",
     "BlockEntityRenderStateMixin",
     "BlockEntityRenderDispatcherMixin",

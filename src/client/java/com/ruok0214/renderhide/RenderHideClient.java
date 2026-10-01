@@ -77,6 +77,10 @@ implements ClientModInitializer {
     private static KeyMapping guiKey;
 
     public void onInitializeClient() {
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents.CHUNK_UNLOAD.register(
+                (level, chunk) -> MovingPistonStates.removeChunk(level, chunk.getPos()));
+        net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.DISCONNECT.register(
+                (handler, client) -> MovingPistonStates.useLevel(null));
         RegionManager.load();
         SelectionOverlayRenderer.register();
         this.registerKeys();

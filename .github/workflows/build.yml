@@ -22,6 +22,8 @@ jobs:
           distribution: temurin
           java-version: '25'
           cache: gradle
+      - name: Test moving piston state publication
+        run: python3 scripts/test_moving_piston_states.py
       - name: Build
         run: |
           chmod +x gradlew

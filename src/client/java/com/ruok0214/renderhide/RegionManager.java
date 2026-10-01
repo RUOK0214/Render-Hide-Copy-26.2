@@ -216,6 +216,7 @@ public final class RegionManager {
     public static void updateDimension(Minecraft client) {
         String dimension = client.level == null ? "" : client.level.dimension().identifier().toString();
         if (selectionLevel != client.level || !dimension.equals(activeDimension)) {
+            MovingPistonStates.useLevel(client.level);
             selectionLevel = client.level;
             clearSelection();
             activeDimension = dimension;
@@ -634,16 +635,12 @@ public final class RegionManager {
     }
 
     private static boolean isMovingPushedBlockVisible(BlockPos pos) {
-        Minecraft client = Minecraft.getInstance();
-        if (client.level == null) {
+        // Chunk meshing also calls this method on Sodium/vanilla worker threads.
+        // Never access the live LevelChunk block-entity map here.
+        BlockState pushed = MovingPistonStates.get(Minecraft.getInstance().level, pos);
+        if (pushed == null) {
             return false;
         }
-        BlockEntity blockEntity = client.level.getBlockEntity(pos);
-        if (!(blockEntity instanceof PistonMovingBlockEntity)) {
-            return false;
-        }
-        PistonMovingBlockEntity piston = (PistonMovingBlockEntity)blockEntity;
-        BlockState pushed = piston.getMovedState();
         if (RegionManager.isVisibleFilterState(pushed, visibleBlockFilters)) {
             return true;
         }
