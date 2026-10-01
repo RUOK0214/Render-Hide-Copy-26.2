@@ -16,6 +16,12 @@ abstract class LevelChunkMovingPistonMixin {
         MovingPistonStates.put(((LevelChunk) (Object) this).getLevel(), entity);
     }
 
+    @Inject(method = "clearAllBlockEntities", at = @At("HEAD"))
+    private void renderhide$clearMovedStates(CallbackInfo ci) {
+        LevelChunk chunk = (LevelChunk) (Object) this;
+        MovingPistonStates.removeChunk(chunk.getLevel(), chunk.getPos());
+    }
+
     @Inject(method = "removeBlockEntity", at = @At("HEAD"))
     private void renderhide$removeMovedState(BlockPos pos, CallbackInfo ci) {
         MovingPistonStates.remove(((LevelChunk) (Object) this).getLevel(), pos);

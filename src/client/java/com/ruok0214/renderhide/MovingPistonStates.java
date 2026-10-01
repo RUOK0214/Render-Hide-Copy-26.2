@@ -43,11 +43,11 @@ public final class MovingPistonStates {
         if (current.level() == level) current.states().remove(pos);
     }
 
-    public static void removeChunk(ClientLevel level, ChunkPos chunk) {
+    public static void removeChunk(Level level, ChunkPos chunk) {
         Snapshot current = snapshot;
         if (current.level() != level) return;
         current.states().keySet().removeIf(pos ->
-                (pos.getX() >> 4) == chunk.x && (pos.getZ() >> 4) == chunk.z);
+                (pos.getX() >> 4) == chunk.x() && (pos.getZ() >> 4) == chunk.z());
     }
 
     public static BlockState get(ClientLevel level, BlockPos pos) {

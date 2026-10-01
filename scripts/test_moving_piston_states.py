@@ -20,7 +20,7 @@ public record BlockPos(int x, int y, int z) {
     "net/minecraft/world/level/Level.java": "package net.minecraft.world.level; public class Level {}",
     "net/minecraft/client/multiplayer/ClientLevel.java": "package net.minecraft.client.multiplayer; public class ClientLevel extends net.minecraft.world.level.Level {}",
     "net/minecraft/world/level/ChunkPos.java": """package net.minecraft.world.level;
-public class ChunkPos { public final int x,z; public ChunkPos(int x,int z) {this.x=x;this.z=z;} }""",
+public record ChunkPos(int x, int z) {}""",
     "net/minecraft/world/level/block/state/BlockState.java": "package net.minecraft.world.level.block.state; public record BlockState(int id) {}",
     "net/minecraft/world/level/block/entity/BlockEntity.java": """package net.minecraft.world.level.block.entity;
 import net.minecraft.core.BlockPos;
